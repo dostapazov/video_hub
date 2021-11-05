@@ -133,7 +133,7 @@ void MainWindow::init_config()
 		}
 	}
 #else
-	loggers.append(new logger_t(false, 1, tr("IPCam101"), tr("rtsp://192.168.0.101:554/media/video1")));
+	loggers.append(new logger_t(false, 1, tr("IPCam101"), tr("rtsp://192.168.0.101:554/media/video2")));
 //	loggers.append(new logger_t(false, 2, tr("IPCam100"), tr("rtsp://192.168.0.100:554/media/video1")));
 //	loggers.append(new logger_t(false, 3, tr("HDMI"    ), tr("rtsp://192.168.0.10:8555/unicast")     ));
 #endif
@@ -242,7 +242,7 @@ void MainWindow::on_cam_switch(quint8 cam_num)
 			if (media)
 				media->deleteLater();
 			m_mon_player->play();
-#ifndef QT_DEBUG
+#if !defined QT_DEBUG && !defined (Q_OS_WIN)
 			m_mon_player->set_fullscreen(true);
 #endif
 			moncam_timer.stop ();
