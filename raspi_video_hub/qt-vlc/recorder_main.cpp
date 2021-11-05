@@ -22,11 +22,10 @@ int main_recorder(int argc, char* argv[])
 	appLog::init(appConfig::value("TLOG/FILE").toString(), appConfig::value("TLOG/LEVEL").toInt());
 
 	MainWindow w;
-#ifdef QT_DEBUG
+#if defined (QT_DEBUG) || defined (Q_OS_WIN)
 	w.show();
 #else
-	w.show();
-	//w.showFullScreen();
+	w.showFullScreen();
 #endif
 	int res = a.exec();
 	appLog::deinit();
