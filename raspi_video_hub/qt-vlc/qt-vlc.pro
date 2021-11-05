@@ -5,7 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui serialport network
-CONFIG   += thread c++11
+CONFIG   += thread c++14
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -24,8 +24,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 win32:{
- INCLUDEPATH += "C:\Program Files (x86)\VideoLAN\VLC\sdk\include"
- LIBS += -L"C:\Program Files (x86)\VideoLAN\VLC\sdk\lib"
+ INCLUDEPATH += "C:\Program Files\VideoLAN\VLC\sdk\include"
+ LIBS += -L"C:\Program Files\VideoLAN\VLC\sdk\lib"
  LIBS += -lvlc -lvlccore
 }
 
@@ -34,28 +34,26 @@ LIBS += -lvlc  -lwiringPi
 LIBS += -L/usr/X11/lib -lX11
 }
 
-
-
 SOURCES += recorder_main.cpp\
-        mainwindow.cpp \
-    appconfig.cpp \
-    crc.cpp \
-    proto.cpp \
-    applog.cpp \
-    camtimesync.cpp \
-    filedeleterthread.cpp \
-    vlclasses.cpp \
-    main_window_uart.cpp \
-    cam_logger_vlc.cpp
+		mainwindow.cpp \
+	appconfig.cpp \
+	crc.cpp \
+	proto.cpp \
+	applog.cpp \
+	camtimesync.cpp \
+	filedeleterthread.cpp \
+	vlclasses.cpp \
+	main_window_uart.cpp \
+	cam_logger_vlc.cpp
 
 HEADERS  += mainwindow.h \
-    appconfig.h \
-    crc.h \
-    proto.h \
-    applog.h \
-    camtimesync.h \
-    filedeleterthread.h \
-    vlcclasses.hpp \
-    cam_logger_vlc.h
+	appconfig.h \
+	crc.h \
+	proto.h \
+	applog.h \
+	camtimesync.h \
+	filedeleterthread.h \
+	vlcclasses.hpp \
+	cam_logger_vlc.h
 
 FORMS    += mainwindow.ui
