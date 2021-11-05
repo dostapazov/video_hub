@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/Icons">
+        <file alias="FOLDER">res/folder.png</file>
+        <file alias="VIDEO">res/video-x-generic.png</file>
+        <file alias="LEFT_UP">res/arrow_left_up.png</file>
+        <file>res/movie_remove.png</file>
+        <file>res/Download.png</file>
+        <file>res/close.png</file>
+        <file>res/camera.ico</file>
+    </qresource>
+</RCC>
