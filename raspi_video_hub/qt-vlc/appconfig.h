@@ -19,9 +19,9 @@ public:
     static QVariant    value(QString key);
     static void        setValue(QString key, QVariant value);
     static int         get_disc_free_space_percent() { return value("COMMON/diskfreespace").toInt() ;}
-    static int         get_mon_camera     () { return value("DEV/CAMERA").toInt();           }
-    static QString     get_uart_device    () { return value("USART/DEVICE").toString();      }
-    static quint32     get_uart_speed     () { return value("USART/BAUD").toUInt();          }
+    static int         get_mon_camera     () { return std::max(0, value("DEV/CAMERA").toInt());}
+    static QString     get_uart_device    () { return value("USART/DEVICE").toString();}
+    static quint32     get_uart_speed     () { return value("USART/BAUD").toUInt();}
     static quint8      get_devid          () { return static_cast<quint8>(value("DEV/ID").toUInt());}
     static QStringList get_cam_list       () { return value("/DEV/LIST").toStringList();     }
     static int         get_cam_id  (QString camName);

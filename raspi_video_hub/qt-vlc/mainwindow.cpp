@@ -118,7 +118,7 @@ QList<cam_params_t> MainWindow::readCameraList()
 {
     QList<cam_params_t> cams;
 #ifdef DESKTOP_DEBUG_BUILD
-    cams.append({1, tr("IPCam100"), tr("rtsp://192.168.0.100:554/media/video1"), false});
+    //cams.append({1, tr("IPCam100"), tr("rtsp://192.168.0.100:554/media/video1"), false});
     cams.append({1, tr("IPCam101"), tr("rtsp://192.168.0.101:554/media/video1"), false});
 #else
     QStringList camList = appConfig::get_cam_list();
@@ -237,6 +237,7 @@ void MainWindow::createPlayer()
         m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerStopped, true);
         m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerPlaying, true);
         m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerEncounteredError, true);
+        m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerPositionChanged, true);
     }
 }
 
@@ -254,7 +255,9 @@ void MainWindow::on_cam_switch(quint8 cam_num)
         createPlayer();
         const cam_logger_vlc* clogger = loggers.at(cam_num);
         label->setText(tr("wait data from camera %1 ").arg(clogger->get_name()));
+
         appState.camId = cam_num;
+        appConfig::setValue(tr("DEV/CAMERA"), appState.camId);
 
         vlc::vlc_media* media = new vlc::vlc_media;
         if (media->open_location(clogger->get_mrl().toLocal8Bit().constData()))
@@ -265,12 +268,13 @@ void MainWindow::on_cam_switch(quint8 cam_num)
             if (media)
                 media->deleteLater();
             m_mon_player->play();
+
 #if !defined (DESKTOP_DEBUG_BUILD)
             m_mon_player->set_fullscreen(true);
 #endif
             moncam_timer.stop ();
             moncam_timer.start(CAMERA_WDT_INTERVAL);
-            appConfig::setValue(tr("DEV/CAMERA"), appState.camId);
+
         }
     }
 }
@@ -306,6 +310,10 @@ void MainWindow::mon_player_events    (const libvlc_event_t event)
                     delete m_mon_player->set_media(nullptr);
             }
             break;
+
+            case  libvlc_MediaPlayerPositionChanged:
+                qDebug() << "Media player position changed";
+                break;
 
         }
     }
@@ -347,8 +355,8 @@ void MainWindow::on_monloger_timeout()
 void MainWindow::start_cam_monitor()
 {
     appLog::write(2, "start_cam_monitor next must be start_cam_switch");
-    int cam_id = appConfig::get_mon_camera();
-    on_cam_switch(static_cast<quint8>(cam_id));
+    int cam_id = std::min(appConfig::get_mon_camera(), 0);
+    emit cam_switch(static_cast<quint8>(cam_id));
     connect(&moncam_timer, &QTimer::timeout, this, &MainWindow::on_moncam_timeout, Qt::ConnectionType::QueuedConnection);
     connect(&monlog_timer, &QTimer::timeout, this, &MainWindow::on_monloger_timeout, Qt::ConnectionType::QueuedConnection);
     start_cam_switch(true);
