@@ -42,7 +42,7 @@ public:
     int      get_id    () const   {return   m_params.id;}
     const QString  get_name  () const   {return m_params.name;}
     const QString  get_mrl   () const   {return m_params.mrl;}
-    bool     start_streaming     (const QString _root_folder, int time_length);
+    void setStreamFolder(const QString folder);
     void     stop_streaming      ();
 
 private Q_SLOTS:
@@ -60,7 +60,7 @@ private:
 
     cam_params_t      m_params;
 
-    QString           m_storage_root;
+    QString           mStorageFolder;
     int               m_file_timelen    = 0;
     int               m_network_caching = 300;
     int               m_time_lenght;

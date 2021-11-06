@@ -98,7 +98,7 @@ int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
 QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
 {
     QString spath    = tr("%1/%2/%3")
-                       .arg(m_storage_root)
+                       .arg(mStorageFolder)
                        .arg(get_name())
                        .arg(dtm.toString("yyyy-MM-dd"));
     QDir dir (spath);
@@ -128,30 +128,29 @@ QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
 
 
 
-bool     cam_logger_vlc::start_streaming      (const QString _root_folder, int time_length)
+void     cam_logger_vlc::setStreamFolder      (const QString folder)
 {
-    if ( m_params.disabled || m_player || get_mrl().isEmpty() )
-        return false;
+    mStorageFolder = folder;
 
-    m_storage_root = _root_folder;
-    m_time_lenght  = time_length;
-    m_player = new vlc::vlc_player();
-    if (m_player)
-    {
-        if (is_event_method)
-        {
-            connect(m_player, &vlc::vlc_player::player_event, this, &cam_logger_vlc::player_events, Qt::ConnectionType::QueuedConnection);
-            m_player->event_activate(libvlc_MediaPlayerPlaying, true);
-            m_player->event_activate(libvlc_MediaPlayerStopped, true);
-            m_player->event_activate(libvlc_MediaPlayerEncounteredError, true);
-            m_player->event_activate(libvlc_MediaPlayerEndReached, true);
-            m_player->stop();
-        }
-        else
-            on_cuttimer_timeout();
-        m_timer_id =  startTimer(1000);
-    }
-    return true;
+//    if ( m_params.disabled || m_player || get_mrl().isEmpty() )
+//        return false;
+//    m_player = new vlc::vlc_player();
+//    if (m_player)
+//    {
+//        if (is_event_method)
+//        {
+//            connect(m_player, &vlc::vlc_player::player_event, this, &cam_logger_vlc::player_events, Qt::ConnectionType::QueuedConnection);
+//            m_player->event_activate(libvlc_MediaPlayerPlaying, true);
+//            m_player->event_activate(libvlc_MediaPlayerStopped, true);
+//            m_player->event_activate(libvlc_MediaPlayerEncounteredError, true);
+//            m_player->event_activate(libvlc_MediaPlayerEndReached, true);
+//            m_player->stop();
+//        }
+//        else
+//            on_cuttimer_timeout();
+//        m_timer_id =  startTimer(1000);
+//    }
+//    return true;
 }
 
 void     cam_logger_vlc::stop_streaming       ()
@@ -206,9 +205,9 @@ int     cam_logger_vlc::create_next_media()
                 str = tr(":stop-time=%1.%2").arg(t.quot).arg(t.rem, 3, 10, QLatin1Char('0'));
                 m_next_media->add_option(str.toLocal8Bit().constData());
             }
-            str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(file_name);
-            m_next_media->add_option(str.toLocal8Bit().constData());
-            m_next_media->add_option(":demux=h264");
+//            str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(file_name);
+//            m_next_media->add_option(str.toLocal8Bit().constData());
+//            m_next_media->add_option(":demux=h264");
             str = tr("%1 create next media  interval %2.%3").arg(get_name()).arg(t.quot).arg(t.rem);
         }
         else
