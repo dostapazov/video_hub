@@ -130,7 +130,7 @@ QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
 
 bool     cam_logger_vlc::start_streaming      (const QString _root_folder, int time_length)
 {
-    if ( m_params.log_disable || m_player || get_url().isEmpty() )
+    if ( m_params.disabled || m_player || get_mrl().isEmpty() )
         return false;
 
     m_storage_root = _root_folder;
@@ -189,7 +189,7 @@ int     cam_logger_vlc::create_next_media()
     m_next_media      = new vlc::vlc_media;
     if (m_next_media)
     {
-        if (m_next_media->open_location(get_url().toLocal8Bit().constData()))
+        if (m_next_media->open_location(get_mrl().toLocal8Bit().constData()))
         {
 
             m_next_media->add_option(":no-audio");
@@ -213,7 +213,7 @@ int     cam_logger_vlc::create_next_media()
         }
         else
         {
-            str = tr("%1 error open  ").arg(get_name()).arg(get_url());
+            str = tr("%1 error open  ").arg(get_name()).arg(get_mrl());
             m_time_lenght = 0;
         }
         appLog::write(0, str);

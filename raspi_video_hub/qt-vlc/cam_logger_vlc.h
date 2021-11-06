@@ -22,8 +22,9 @@ struct cam_params_t
 {
     int id = 0;
     QString name;
-    QString url;
-    bool log_disable = false;
+    QString mrl;
+    bool disabled = false;
+    quint32 time_span = 60;
 };
 
 
@@ -40,8 +41,7 @@ public:
     ~cam_logger_vlc();
     int      get_id    () const   {return   m_params.id;}
     const QString  get_name  () const   {return m_params.name;}
-    const QString  get_url   () const   {return m_params.url;}
-    void     set_mrl   (const QString& _mrl);
+    const QString  get_mrl   () const   {return m_params.mrl;}
     bool     start_streaming     (const QString _root_folder, int time_length);
     void     stop_streaming      ();
 

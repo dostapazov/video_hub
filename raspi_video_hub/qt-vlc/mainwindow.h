@@ -45,6 +45,10 @@ public:
     ~MainWindow();
 
 
+    void initBlinker();
+
+    void createPlayer();
+
 protected:
     void closeEvent(QCloseEvent* event);
 
@@ -54,7 +58,7 @@ private:
     void start_time_sync();
     void init_gpio  ();
     void init_libvlc();
-    void init_config();
+    void load_config();
     void init_uart  ();
     void deinitUART ();
     void deinit_all ();
@@ -93,6 +97,7 @@ private slots:
     void on_bTestUpdate_clicked();
 
 private:
+    QList<cam_params_t> readCameraList();
 
     vlc::vlc_player*      m_mon_player   = Q_NULLPTR;
     QString m_vlog_root  = "d:/rasp_media/VLOG6";
@@ -115,11 +120,12 @@ private:
 
     CamTimeSync     cam_time_sync;
     int             cam_time_synchro = -1;
-    PCK_STATE_t appState;
+    PCK_STATE_t     appState;
     static const char* const vlcArgs[];
     static bool    do_rename_recorder  ();
     static QString get_update_file_name();
     static void    check_need_update   ();
+
 
     bool is_cam_online = false;
 
