@@ -5,15 +5,16 @@ static appConfig* config = Q_NULLPTR;
 //
 //
 //
-appConfig::appConfig(QObject *parent)
-    :QObject(parent)
+appConfig::appConfig(QObject* parent)
+    : QObject(parent)
 {
 
 }
 
-void appConfig::open(const QString &organization, const QString &application)
+void appConfig::open(const QString& organization, const QString& application)
 {
-    if (cfg) return;
+    if (cfg)
+        return;
 
     cfg = new QSettings(organization, application);
 }
@@ -40,7 +41,8 @@ void appConfig::putValue(QString key, QVariant value)
 
 void appConfig::init(const QString organization, const QString application, QObject* parent)
 {
-    if (config) return;
+    if (config)
+        return;
     config = new appConfig(parent);
     config->open(organization, application);
 }
@@ -70,12 +72,12 @@ QString     appConfig::get_cam_name(QString camName)
 
 QString     appConfig::get_cam_mrl (QString camName)
 {
- return  value(QString("/%1/MRL").arg(camName)).toString();
+    return  value(QString("/%1/MRL").arg(camName)).toString();
 }
 
 bool     appConfig::get_cam_logdisabled (QString camName)
 {
- QVariant v = value(QString("/%1/LOGDISABLED").arg(camName));
- return   v.isValid() ? v.toBool() : false;
+    QVariant v = value(QString("/%1/LOGDISABLED").arg(camName));
+    return   v.isValid() ? v.toBool() : false;
 }
 

@@ -3,7 +3,8 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
-#include <QAction>
+//#include <QAction>
+#include <QKeyEvent>
 #include <stdio.h>
 #include "appconfig.h"
 #include "mainwindow.h"
@@ -35,14 +36,8 @@ const char* const MainWindow::vlcArgs[] =
 };
 
 
-MainWindow::MainWindow(QWidget* parent) :
-    QMainWindow(parent)
+void MainWindow::initBlinker()
 {
-    setupUi(this);
-    appState = PCK_STATE_t {0xFF, 77, 777};
-    connect(this, &MainWindow::cam_switch, this, &MainWindow::on_cam_switch, Qt::ConnectionType::QueuedConnection);
-    init_gpio  ();
-
 #ifdef QT_DEBUG
     blinker.setInterval(1000);
 #else
@@ -50,10 +45,22 @@ MainWindow::MainWindow(QWidget* parent) :
 #endif
 
     connect(&blinker, &QTimer::timeout, this, &MainWindow::on_blink, Qt::ConnectionType::QueuedConnection);
+}
+
+MainWindow::MainWindow(QWidget* parent) :
+    QMainWindow(parent)
+{
+    setupUi(this);
+    appState = PCK_STATE_t {0xFF, 77, 777};
+    connect(this, &MainWindow::cam_switch, this, &MainWindow::on_cam_switch, Qt::ConnectionType::QueuedConnection);
+    init_gpio  ();
+    initBlinker();
+
     blinker.start    ();
-    init_uart        ();
-    init_config      ();
     init_libvlc      ();
+    init_uart        ();
+    load_config      ();
+
 }
 
 MainWindow::~MainWindow()
@@ -64,9 +71,7 @@ MainWindow::~MainWindow()
 void MainWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
-    //TODO uncomment start_cam_monitor
     start_cam_monitor();
-
 }
 
 void MainWindow::init_libvlc()
@@ -109,40 +114,60 @@ void MainWindow::closeEvent(QCloseEvent* event)
     qApp->quit();
 }
 
-void MainWindow::init_config()
+QList<cam_params_t> MainWindow::readCameraList()
 {
-
-#ifndef DESKTOP_DEBUG_BUILD
-
+    QList<cam_params_t> cams;
+#ifdef DESKTOP_DEBUG_BUILD
+    cams.append({1, tr("IPCam100"), tr("rtsp://192.168.0.100:554/media/video1"), false});
+    cams.append({1, tr("IPCam101"), tr("rtsp://192.168.0.101:554/media/video1"), false});
+#else
     QStringList camList = appConfig::get_cam_list();
     std::sort(camList.begin(), camList.end());
     foreach (QString camName, camList)
     {
-        QString params;
-        int      id  = appConfig::get_cam_id(camName);
-        QString mrl  = appConfig::get_cam_mrl(camName);
-        QString name = appConfig::get_cam_name(camName);
-        bool    log_disable = appConfig::get_cam_logdisabled(camName);
-        //QString opts = appConfig::value(QString("/%1/Options").arg(camName)).toString();
-        if (!mrl.isEmpty())
+        cam_params_t cam_param;
+        cam_param.mrl  = appConfig::get_cam_mrl(camName);
+        cam_param.id  = appConfig::get_cam_id(camName);
+        cam_param.name = appConfig::get_cam_name(camName);
+        cam_param.disabled = appConfig::get_cam_logdisabled(camName);
+
+
+        if (!cam_param.mrl.isEmpty())
         {
-            loggers.append(new logger_t(log_disable, id, name, mrl));
-            QString str = tr("append camera ID=%1 %2 %3").arg(id).arg(name).arg(mrl);
-            appLog::write(0, str);
+            cams.append(cam_param);
         }
     }
-#else
-    loggers.append(new logger_t(false, 1, tr("IPCam101"), tr("rtsp://192.168.0.101:554/media/video2")));
-//	loggers.append(new logger_t(false, 2, tr("IPCam100"), tr("rtsp://192.168.0.100:554/media/video1")));
-//	loggers.append(new logger_t(false, 3, tr("HDMI"    ), tr("rtsp://192.168.0.10:8555/unicast")     ));
 #endif
+    return cams;
+}
+
+void MainWindow::load_config()
+{
+
+    QList<cam_params_t> cams = readCameraList();
+
+    for ( cam_params_t& cp : cams)
+    {
+        loggers.append(new cam_logger_vlc(cp));
+        QString str = tr("append camera ID=%1 %2 %3").arg(cp.id).arg(cp.name).arg(cp.mrl);
+        appLog::write(0, str);
+    }
+
 }
 
 
 void MainWindow::deinit_all()
 {
+    qDebug() << Q_FUNC_INFO << " begin";
+
     blinker.stop ();
-    disconnect(&blinker, SIGNAL(timeout()));
+    disconnect(&blinker );
+
+    foreach (cam_logger_vlc* cl, this->loggers)
+    {
+        cl->stop_streaming();
+        delete cl;
+    }
 
     deinit_player();
 
@@ -153,14 +178,11 @@ void MainWindow::deinit_all()
         file_deleter->deleteLater();
         file_deleter = Q_NULLPTR;
     }
-    foreach (logger_t* cl, this->loggers)
-    {
-        cl->stop_streaming();
-        delete cl;
-    }
+
 
     deinitUART   ();
     //appLog::write(2,QString(Q_FUNC_INFO));
+    qDebug() << Q_FUNC_INFO << " end";
 }
 
 
@@ -205,21 +227,33 @@ void MainWindow::on_blink()
     blinker.start();
 }
 
+void MainWindow::createPlayer()
+{
+    if (!m_mon_player)
+    {
+        appLog::write(0, "create new mon_player");
+        m_mon_player  =  new vlc::vlc_player;
+        connect(m_mon_player, &vlc::vlc_player::player_event, this, &MainWindow::mon_player_events, Qt::ConnectionType::QueuedConnection);
+        m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerStopped, true);
+        m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerPlaying, true);
+        m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerEncounteredError, true);
+    }
+}
+
 void MainWindow::on_cam_switch(quint8 cam_num)
 {
     QObject* sobj = sender();
     qDebug() << Q_FUNC_INFO << cam_num;
     QString str = tr("on_cam_switch(%1) sender %2").arg(int(cam_num)).arg(sobj ? sobj->objectName() : "none");
+    qDebug() << str;
     appLog::write(6, str);
     is_cam_online = false;
 
     if ((appState.camId != cam_num || !m_mon_player || !m_mon_player->has_media()) && cam_num < this->loggers.count() )
     {
-
-        const logger_t* clogger = loggers.at(cam_num);
-        if (appState.camId != cam_num)
-            label->setText(tr("wait data from camera %1 ").arg(clogger->get_name()));
-
+        createPlayer();
+        const cam_logger_vlc* clogger = loggers.at(cam_num);
+        label->setText(tr("wait data from camera %1 ").arg(clogger->get_name()));
         appState.camId = cam_num;
 
         vlc::vlc_media* media = new vlc::vlc_media;
@@ -227,21 +261,11 @@ void MainWindow::on_cam_switch(quint8 cam_num)
         {
 
             media->add_option(":rtsp-timeout=5000");
-            if (!m_mon_player)
-            {
-                appLog::write(0, "create new mon_player");
-                m_mon_player  =  new vlc::vlc_player;
-                connect(m_mon_player, &vlc::vlc_player::player_event, this, &MainWindow::mon_player_events, Qt::ConnectionType::QueuedConnection);
-                m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerStopped, true);
-                m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerPlaying, true);
-                m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerEncounteredError, true);
-            }
-            //m_mon_player->stop(50);
             media = m_mon_player->set_media(media);
             if (media)
                 media->deleteLater();
             m_mon_player->play();
-#if !defined QT_DEBUG && !defined (Q_OS_WIN)
+#if !defined (DESKTOP_DEBUG_BUILD)
             m_mon_player->set_fullscreen(true);
 #endif
             moncam_timer.stop ();
@@ -262,7 +286,7 @@ void MainWindow::mon_player_events    (const libvlc_event_t event)
             {
                 QString str = tr("Mon player stopped ");
                 appLog::write(6, str);
-                const logger_t* clogger = loggers.at(appState.camId);
+                const cam_logger_vlc* clogger = loggers.at(appState.camId);
                 label->setText(tr("%1 lost connection ").arg(clogger->get_name()));
 
             }
@@ -270,7 +294,7 @@ void MainWindow::mon_player_events    (const libvlc_event_t event)
             case libvlc_MediaPlayerPlaying:
             {
                 appLog::write(6, "Mon player playing");
-                const logger_t* clogger = loggers.at(appState.camId);
+                const cam_logger_vlc* clogger = loggers.at(appState.camId);
                 label->setText(tr("%1 working ").arg(clogger->get_name()));
             }
             break;
@@ -296,7 +320,7 @@ void MainWindow::on_moncam_timeout()
         if (m_mon_player && m_mon_player->get_state() !=  libvlc_Playing)
         {
             deinit_player();
-            const logger_t* clogger = loggers.at(appState.camId);
+            const cam_logger_vlc* clogger = loggers.at(appState.camId);
             if (is_cam_online)
                 label->setText(tr("Camera %1 disconnected").arg(clogger->get_name()));
             on_cam_switch(appState.camId);
@@ -394,8 +418,11 @@ void MainWindow::start_loggers()
             m_vlog_tmlen = 3600;
 
         start_file_deleter();
-        foreach (logger_t* cl, loggers)
-            cl->start_streaming(this->m_vlog_root, this->m_vlog_tmlen);
+
+        foreach (cam_logger_vlc* cl, loggers)
+        {
+            cl->start_streaming(m_vlog_root, m_vlog_tmlen);
+        }
         m_vlogger_state = vl_working;
     }
 
@@ -494,16 +521,23 @@ void MainWindow::start_cam_switch(bool enable)
 
 void MainWindow::deinit_player()
 {
+    qDebug() << Q_FUNC_INFO << " begin";
     if (m_mon_player)
     {
         m_mon_player->disconnect();
         m_mon_player->stop();
+
         vlc::vlc_media* media = m_mon_player->set_media(nullptr);
         if (media)
             media->deleteLater();
+
+
         m_mon_player->deleteLater();
         m_mon_player = nullptr;
     }
+
+
+    qDebug() << Q_FUNC_INFO << " end";
 }
 
 void MainWindow::on_bTestUpdate_clicked()
@@ -550,5 +584,40 @@ void MainWindow::check_need_update()
         else
             appLog::write(0, "vhub updated error. what can i do?") ;
     }
+}
+
+quint8 getNextCamId(int count, int current, bool increment)
+{
+    current += increment ? 1 : -1;
+    if (current < 0 )
+        return count - 1;
+
+    if (current >= count)
+        return 0;
+
+    return current;
+}
+
+void MainWindow::keyReleaseEvent(QKeyEvent* event)
+{
+    QMainWindow::keyReleaseEvent(event);
+#ifdef DESKTOP_DEBUG_BUILD
+    switch (event->key())
+    {
+        case Qt::Key_Left:
+        case Qt::Key_Right:
+        {
+            quint8 camId =  getNextCamId(loggers.size(), appState.camId, event->key() == Qt::Key_Right);
+            emit cam_switch(camId);
+        }
+
+        break;
+        case Qt::Key_Space:
+            m_mon_player->is_playing() ?  m_mon_player->stop() : m_mon_player->play();
+            break;
+        default:
+            break;
+    }
+#endif
 }
 
