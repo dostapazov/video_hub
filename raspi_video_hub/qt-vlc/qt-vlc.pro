@@ -30,7 +30,8 @@ win32:{
 }
 
 unix:{
-LIBS += -lvlc  -lwiringPi
+LIBS += -lvlc
+#LIBS += -lwiringPi
 LIBS += -L/usr/X11/lib -lX11
 }
 

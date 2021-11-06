@@ -7,34 +7,46 @@
 
 int main_recorder(int argc, char* argv[])
 {
-	QApplication a(argc, argv);
-	//! файл "Simple Video HUB.conf" находится в папке "/home/pi/.config/NIKTES"
-	appConfig::init("NIKTES", "Simple Video HUB");
+    QApplication a(argc, argv);
+    //! файл "Simple Video HUB.conf" находится в папке "/home/pi/.config/NIKTES"
+    appConfig::init("NIKTES", "Simple Video HUB");
+    QString logFileName;
+    int logLevel = 0;
 
+#ifdef DESKTOP_DEBUG_BUILD
+    QString raspFolder;
+#ifdef Q_OS_LINUX
+    raspFolder = "~/rasp_media/";
+#endif
+    raspFolder = "t:/rasp_media/";
 #ifdef Q_OS_WIN
-	appConfig::setValue("TLOG/FILE", "t:/rasp_media/log/vhub.log");
-	appConfig::setValue("TLOG/LEVEL", 0);
-	appConfig::setValue("VLOG/MountPoint", "t:/rasp_media");
-	appConfig::setValue("VLOG/Folder", "medialog");
-	appConfig::setValue("COMMON/video_length", 2);
+
 #endif
 
-	appLog::init(appConfig::value("TLOG/FILE").toString(), appConfig::value("TLOG/LEVEL").toInt());
-
-	MainWindow w;
-#if defined (QT_DEBUG) || defined (Q_OS_WIN)
-	w.show();
+    logFileName = raspFolder + "log/vhub.log";
+    appConfig::setValue("VLOG/MountPoint", raspFolder);
+    appConfig::setValue("VLOG/Folder", "medialog");
+    appConfig::setValue("COMMON/video_length", 2);
 #else
-	w.showFullScreen();
+    logFileName = appConfig::value("TLOG/FILE").toString();
+    logLevel = appConfig::value("TLOG/LEVEL").toInt();
 #endif
-	int res = a.exec();
-	appLog::deinit();
-	return res;
+
+    appLog::init(logFileName, logLevel);
+    MainWindow w;
+#if defined (DESKTOP_DEBUG_BUILD)
+    w.show();
+#else
+    w.showFullScreen();
+#endif
+    int res = a.exec();
+    appLog::deinit();
+    return res;
 }
 
 
 int main(int argc, char* argv[])
 {
 
-	return main_recorder(argc, argv);
+    return main_recorder(argc, argv);
 }
