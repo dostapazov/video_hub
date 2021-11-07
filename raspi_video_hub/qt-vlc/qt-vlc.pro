@@ -41,7 +41,6 @@ SOURCES += recorder_main.cpp\
 	crc.cpp \
 	proto.cpp \
 	applog.cpp \
-	camtimesync.cpp \
 	filedeleterthread.cpp \
 	vlclasses.cpp \
 	main_window_uart.cpp \
@@ -52,7 +51,6 @@ HEADERS  += mainwindow.h \
 	crc.h \
 	proto.h \
 	applog.h \
-	camtimesync.h \
 	filedeleterthread.h \
 	vlcclasses.hpp \
 	cam_logger_vlc.h

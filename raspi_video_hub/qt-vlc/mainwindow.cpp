@@ -352,54 +352,6 @@ void MainWindow::start_cam_monitor()
     emit cam_switch(static_cast<quint8>(cam_id));
 }
 
-
-void MainWindow::start_time_sync()
-{
-    //Запускаем синхронизацию времени с камерой
-    connect(&cam_time_sync, &CamTimeSync::synchronized, this, &MainWindow::cam_time_synchronized, Qt::ConnectionType::QueuedConnection);
-    connect(&cam_time_sync, &CamTimeSync::time_difference, this, &MainWindow::cam_time_difference, Qt::ConnectionType::QueuedConnection);
-    cam_time_synchronized(false);
-}
-
-
-void MainWindow::cam_time_synchronized(bool ok)
-{
-
-    if (!ok)
-    {
-        //Ошибка синхронизации времени выбираем другую камеру
-        int cams_count = loggers.count();
-        if ((++cam_time_synchro) >= cams_count)
-            cam_time_synchro = 0;
-        QString str = cams_count ? loggers.at(cam_time_synchro)->get_mrl() : QString();
-        cam_time_sync.start_sync(str, cams_count ? 3000 : 5000);
-        str = tr("Sync time fault try at next cam %1 from %2").arg(cam_time_synchro).arg(cam_time_sync.host());
-        qDebug() << str;
-#if defined (QT_DEBUG)
-        start_loggers();
-#endif
-    }
-    else
-    {
-        cam_time_sync.schedule_next_request(5000);
-        qDebug() << tr("time sync success from %1").arg(cam_time_sync.host());
-        start_loggers();
-    }
-}
-
-
-void MainWindow::cam_time_difference(const QDateTime& dt, const qint64& diff)
-{
-    //Рассинхронизация времени с камерой больше порога
-    cam_time_sync.schedule_next_request(5000);
-    qDebug() << tr("%1 time difference %2").arg(cam_time_sync.host()).arg(diff);
-    QString command = tr("sudo date --set=\"%1\"").arg(dt.toString("yyyy-MM-dd hh:mm:ss"));
-#ifdef Q_OS_LINUX
-    system(command.toLocal8Bit().constData());
-#endif
-
-}
-
 void MainWindow::start_loggers()
 {
     if (m_vlog_root.isEmpty())
