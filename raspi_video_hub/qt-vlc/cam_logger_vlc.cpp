@@ -42,30 +42,7 @@ bool cam_logger_vlc::isEventSupport()
 int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
 {
     //const int msec_in_hour = 3600*1000;
-    const int msec_in_day  = 24 * 3600 * 1000;
-    QTime tm1 = dtm.time();
-    QTime tm2 = tm1;
-    tm2 = tm2.addSecs(m_time_duration);
-
-    if ( m_time_duration >= 3600 )
-        tm2 = tm2.addSecs(-(tm2.minute() * 60));
-    else
-    {
-        if (m_time_duration >= 120)
-        {
-            int mlen = m_time_duration / 60;
-            div_t dt = div(tm2.minute(), mlen);
-            tm2 = tm2.addSecs(-(dt.rem * 60));
-        }
-    }
-
-    tm2 = tm2.addSecs(-tm2.second () );
-
-    tm2 = tm2.addMSecs(-tm2.msec());
-    int interval = tm2.msecsSinceStartOfDay() - tm1.msecsSinceStartOfDay();
-    if (interval < 0)
-        interval += msec_in_day;
-    interval = qMin(abs(interval), this->m_time_duration * 1000);
+    int interval = 10 * 60 * 1000;// 10 минут
     return interval;
 
 }
@@ -106,12 +83,35 @@ QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
 void     cam_logger_vlc::startStreaming(const QString folder, int timeDuration)
 {
     mStorageFolder = folder;
-    m_time_duration = timeDuration;
+    m_time_duration = timeDuration ;
+    on_cuttimer_timeout();
 }
 
 void     cam_logger_vlc::stopStreaming  ()
 {
     releasePlayer();
+}
+
+
+
+void cam_logger_vlc::setupMediaForStreaming()
+{
+    QString str;
+    QDateTime dtm     = QDateTime::currentDateTime();
+    m_file_timelen    = get_time_interval(dtm);
+    QString file_name = get_file_name(dtm);
+
+    m_next_media->add_option(":no-audio");
+    m_next_media->add_option(":no-overlay");
+    m_next_media->add_option(":sout-mp4-faststart");
+
+    str = tr(":network-caching=%1").arg(m_network_caching);
+    m_next_media->add_option(str.toLocal8Bit().constData());
+
+
+    str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(file_name);
+    m_next_media->add_option(str.toLocal8Bit().constData());
+    m_next_media->add_option(":demux=h264");
 }
 
 int     cam_logger_vlc::create_next_media()
@@ -124,40 +124,24 @@ int     cam_logger_vlc::create_next_media()
         appLog::write(2, tr(" %1 create_next_media previos media instance not null").arg(get_name()));
 #endif
     }
-
-    QDateTime dtm     = QDateTime::currentDateTime();
-    m_file_timelen    = get_time_interval(dtm);
-    QString file_name = get_file_name(dtm);
     QString str;
 
-    m_next_media      = new vlc::vlc_media;
+    m_file_timelen = 0;
+    m_next_media   = new vlc::vlc_media;
     if (m_next_media)
     {
         if (m_next_media->open_location(get_mrl().toLocal8Bit().constData()))
         {
 
-            m_next_media->add_option(":no-audio");
-            m_next_media->add_option(":no-overlay");
             m_next_media->add_option(":rtsp-timeout=5000");
-            m_next_media->add_option(":sout-mp4-faststart");
-
-            str = tr(":network-caching=%1").arg(m_network_caching);
-            m_next_media->add_option(str.toLocal8Bit().constData());
+            setupMediaForStreaming();
             div_t t     = div(m_file_timelen, 1000);
-
-//            if (this->is_event_method)
-//            {
-//                str = tr(":stop-time=%1.%2").arg(t.quot).arg(t.rem, 3, 10, QLatin1Char('0'));
-//                m_next_media->add_option(str.toLocal8Bit().constData());
-//            }
-            str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(file_name);
-            m_next_media->add_option(str.toLocal8Bit().constData());
-            m_next_media->add_option(":demux=h264");
             str = tr("%1 create next media  interval %2.%3").arg(get_name()).arg(t.quot).arg(t.rem);
         }
         else
         {
             str = tr("%1 error open  ").arg(get_name()).arg(get_mrl());
+
         }
         appLog::write(0, str);
         qDebug() << str;
@@ -186,7 +170,7 @@ void cam_logger_vlc::on_cuttimer_timeout()
 {
     if (cuttimer.isActive())
         cuttimer.stop ();
-
+    createPlayer();
     vlc::vlc_media* old_media = m_player->set_media(get_next_media());
 
     if (m_file_timelen)

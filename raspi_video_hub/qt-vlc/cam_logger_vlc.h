@@ -82,6 +82,7 @@ private:
     vlc::vlc_player*  m_player     = nullptr;
     vlc::vlc_media*   m_next_media = nullptr;
 
+    void setupMediaForStreaming();
 };
 
 #endif // CAM_LOGGER_H
