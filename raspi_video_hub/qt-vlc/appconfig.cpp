@@ -49,9 +49,9 @@ void appConfig::init(const QString organization, const QString application, QObj
 
 QVariant appConfig::value(QString key)
 {
-    if (config)
-        return config->getValue(key);
-    return QVariant();
+    if (!config)
+        return QVariant();
+    return  config->getValue(key);
 }
 
 void appConfig::setValue(QString key, QVariant value)
@@ -75,9 +75,30 @@ QString     appConfig::get_cam_mrl (QString camName)
     return  value(QString("/%1/MRL").arg(camName)).toString();
 }
 
+int         appConfig::get_time_duration()
+{
+    constexpr int ONE_HOUR = 60;
+    int duration = appConfig::value("COMMON/video_length").toInt();
+    return duration ? duration : ONE_HOUR;
+
+}
+
+
 bool     appConfig::get_cam_logdisabled (QString camName)
 {
     QVariant v = value(QString("/%1/LOGDISABLED").arg(camName));
     return   v.isValid() ? v.toBool() : false;
 }
+
+
+QString     appConfig::get_mount_point()
+{
+    return value("VLOG/MountPoint").toString();
+}
+
+QString     appConfig::get_log_folder()
+{
+    return value("VLOG/Folder").toString();
+}
+
 

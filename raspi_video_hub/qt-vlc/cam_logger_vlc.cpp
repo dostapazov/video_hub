@@ -31,7 +31,7 @@ cam_logger_vlc::cam_logger_vlc(const cam_params_t& aParams, QObject* parent )
 
 cam_logger_vlc::~cam_logger_vlc()
 {
-    stop_streaming();
+    stopStreaming();
     QThread::msleep(200);
 }
 
@@ -70,15 +70,15 @@ int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
     const int msec_in_day  = 24 * 3600 * 1000;
     QTime tm1 = dtm.time();
     QTime tm2 = tm1;
-    tm2 = tm2.addSecs(m_time_lenght);
+    tm2 = tm2.addSecs(m_time_duration);
 
-    if ( m_time_lenght >= 3600 )
+    if ( m_time_duration >= 3600 )
         tm2 = tm2.addSecs(-(tm2.minute() * 60));
     else
     {
-        if (m_time_lenght >= 120)
+        if (m_time_duration >= 120)
         {
-            int mlen = m_time_lenght / 60;
+            int mlen = m_time_duration / 60;
             div_t dt = div(tm2.minute(), mlen);
             tm2 = tm2.addSecs(-(dt.rem * 60));
         }
@@ -90,7 +90,7 @@ int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
     int interval = tm2.msecsSinceStartOfDay() - tm1.msecsSinceStartOfDay();
     if (interval < 0)
         interval += msec_in_day;
-    interval = qMin(abs(interval), this->m_time_lenght * 1000);
+    interval = qMin(abs(interval), this->m_time_duration * 1000);
     return interval;
 
 }
@@ -128,9 +128,10 @@ QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
 
 
 
-void     cam_logger_vlc::setStreamFolder      (const QString folder)
+void     cam_logger_vlc::startStreaming(const QString folder, int timeDuration)
 {
     mStorageFolder = folder;
+    m_time_duration = timeDuration;
 
 //    if ( m_params.disabled || m_player || get_mrl().isEmpty() )
 //        return false;
@@ -153,7 +154,7 @@ void     cam_logger_vlc::setStreamFolder      (const QString folder)
 //    return true;
 }
 
-void     cam_logger_vlc::stop_streaming       ()
+void     cam_logger_vlc::stopStreaming       ()
 {
 
     if (m_player)
@@ -213,7 +214,6 @@ int     cam_logger_vlc::create_next_media()
         else
         {
             str = tr("%1 error open  ").arg(get_name()).arg(get_mrl());
-            m_time_lenght = 0;
         }
         appLog::write(0, str);
         qDebug() << str;
@@ -247,7 +247,6 @@ void   cam_logger_vlc::player_events(const libvlc_event_t event)
             str = tr("%1 player end reached").arg(get_name());
             appLog::write(0, str);
             qDebug() << str;
-            m_time_lenght = 0;
             create_next_media();
             break;
         case libvlc_MediaPlayerStopped          :

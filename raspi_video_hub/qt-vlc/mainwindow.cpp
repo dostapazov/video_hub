@@ -52,7 +52,7 @@ MainWindow::MainWindow(QWidget* parent) :
 {
     setupUi(this);
     appState = PCK_STATE_t {0xFF, 77, 777};
-    connect(this, &MainWindow::cam_switch, this, &MainWindow::on_cam_switch, Qt::ConnectionType::QueuedConnection);
+    connect(this, &MainWindow::cam_switch, this, &MainWindow::onCamSwitch, Qt::ConnectionType::QueuedConnection);
     init_gpio  ();
     initBlinker();
 
@@ -72,6 +72,7 @@ void MainWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
     start_cam_monitor();
+    start_loggers();
 }
 
 void MainWindow::init_libvlc()
@@ -124,7 +125,6 @@ QList<cam_params_t> MainWindow::readCameraList()
 
 
     cam_params_t cam_param;
-    cam_param.time_span = appConfig::value("COMMON/video_length").toInt();
 
     QStringList camList = appConfig::get_cam_list();
     std::sort(camList.begin(), camList.end());
@@ -157,6 +157,18 @@ void MainWindow::load_config()
         appLog::write(0, str);
     }
 
+    appConfig::setValue("VLOG/MountPoint", "~/raspi_log/");
+#ifdef DESKTOP_DEBUG_BUILD
+    appConfig::setValue("VLOG/Folder", "streaming");
+
+#ifdef Q_OS_LINUX
+    appConfig::setValue("VLOG/MountPoint", "~/raspi_log/");
+#else
+    appConfig::setValue("VLOG/MountPoint", "d:/raspi_log/");
+#endif
+
+#endif
+
 }
 
 
@@ -169,7 +181,7 @@ void MainWindow::deinit_all()
 
     foreach (cam_logger_vlc* cl, this->loggers)
     {
-        cl->stop_streaming();
+        cl->stopStreaming();
         delete cl;
     }
 
@@ -189,25 +201,34 @@ void MainWindow::deinit_all()
     qDebug() << Q_FUNC_INFO << " end";
 }
 
-
-QString MainWindow::check_media_drive()
+static void addFolder(QString& path, const QString& folder)
 {
-    QString strPath;
+    QChar slash('/');
+    if (!path.endsWith(slash))
+        path += slash;
 
-    strPath = tr("%1/%2/%3")
-              .arg(appConfig::value("VLOG/MountPoint").toString())
-              .arg(whoami())
-              .arg(appConfig::value("VLOG/Folder").toString());
+    path += folder.startsWith(slash) ? folder.mid(1) : folder;
+}
+
+bool MainWindow::check_media_drive()
+{
+    QString strPath =  appConfig::get_mount_point();
+    addFolder(strPath, whoami());
+    addFolder(strPath, appConfig::get_log_folder());
 
     appLog::write(0,  tr("check existing dir %1").arg(strPath));
     if ( QDir(strPath).exists() )
     {
 
         appLog::write(0, tr("directory exists"));
-        return strPath;
+        m_vlog_root = strPath;
     }
-    appLog::write(0, tr("directory NOT exist: write videolog disabled "));
-    return  QString();
+    else
+    {
+        appLog::write(0, tr("directory NOT exist: write videolog disabled "));
+        m_vlog_root.clear();
+    }
+    return  !m_vlog_root.isEmpty();
 }
 
 
@@ -227,7 +248,6 @@ void MainWindow::on_blink()
     digitalWrite(PIN_LED1, led_state);
     readCPUtemper();
     check_need_update();
-    //check player state
     blinker.start();
 }
 
@@ -245,7 +265,7 @@ void MainWindow::createPlayer()
     }
 }
 
-void MainWindow::on_cam_switch(quint8 cam_num)
+void MainWindow::onCamSwitch(quint8 cam_num)
 {
     QObject* sobj = sender();
     qDebug() << Q_FUNC_INFO << cam_num;
@@ -324,28 +344,12 @@ void MainWindow::mon_player_events    (const libvlc_event_t event)
     }
 }
 
-void MainWindow::on_monloger_timeout()
-{
-//    if (m_vlogger_state == vl_disable)
-//    {
-//        m_vlogger_state = check_media_drive() ? vl_enable : vl_disable;
-//        appConfig::setValue("VLOG/Enabled", m_vlogger_state != vl_disable ? true : false);
-//        if (m_vlogger_state != vl_disable)
-//            start_time_sync();
-//#ifdef QT_DEBUG
-//        start_loggers();
-//#endif
-//    }
-}
 
 void MainWindow::start_cam_monitor()
 {
     appLog::write(2, "start_cam_monitor next must be start_cam_switch");
-    int cam_id = std::min(appConfig::get_mon_camera(), 0);
+    int cam_id = std::max(appConfig::get_mon_camera(), 0);
     emit cam_switch(static_cast<quint8>(cam_id));
-
-    connect(&monlog_timer, &QTimer::timeout, this, &MainWindow::on_monloger_timeout, Qt::ConnectionType::QueuedConnection);
-    monlog_timer.start(VLOG_WDT_INTERVAL);
 }
 
 
@@ -381,7 +385,6 @@ void MainWindow::cam_time_synchronized(bool ok)
         qDebug() << tr("time sync success from %1").arg(cam_time_sync.host());
         start_loggers();
     }
-
 }
 
 
@@ -401,16 +404,15 @@ void MainWindow::start_loggers()
 {
     if (m_vlog_root.isEmpty())
     {
-        m_vlog_root = check_media_drive();
-        if (!m_vlog_root.isEmpty())
+        if (check_media_drive())
         {
             start_file_deleter();
+            int timeDuration = appConfig::get_time_duration();
 
             foreach (cam_logger_vlc* cl, loggers)
             {
-                cl->setStreamFolder(m_vlog_root);
+                cl->startStreaming(m_vlog_root, timeDuration);
             }
-            m_vlogger_state = vl_working;
         }
     }
 }

@@ -66,7 +66,7 @@ private:
     void start_file_deleter();
     void readCPUtemper();
     QString whoami();
-    QString check_media_drive();
+    bool check_media_drive();
     void showEvent  (QShowEvent*   event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
     void handle_uart_packet(PCK_Header_t& header, int offset);
@@ -85,9 +85,7 @@ private slots:
 
     void on_blink();
 
-    void on_monloger_timeout();
-    void on_cam_switch(quint8 camNum);
-
+    void onCamSwitch(quint8 camNum);
     void cam_time_synchronized(bool ok);
     void cam_time_difference  (const QDateTime& dt, const qint64& diff);
     void mon_player_events    (const libvlc_event_t event);
@@ -99,17 +97,13 @@ private:
     QList<cam_params_t> readCameraList();
 
     vlc::vlc_player*      m_mon_player   = Q_NULLPTR;
-    QString m_vlog_root  = "d:/rasp_media/VLOG6";
+    QString m_vlog_root  ;
     QVector<cam_logger_vlc*>   loggers;
 
-    quint8 camIndex = 0;
     QTimer blinker ;
     QTimer parser  ;
 
-    QTimer monlog_timer;
     int                led_state = 1;
-    enum               vlogger_state_e {vl_disable, vl_enable, vl_working};
-    vlogger_state_e    m_vlogger_state = vl_disable;
 
     QByteArray         rxBuf;
     QSerialPort*       uart = Q_NULLPTR;
