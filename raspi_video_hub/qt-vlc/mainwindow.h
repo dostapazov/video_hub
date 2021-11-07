@@ -23,7 +23,7 @@
 
 #define UPDATE_EXIT_CODE 77
 
-#define CAMERA_WDT_INTERVAL     20000
+//#define CAMERA_WDT_INTERVAL     20000
 #define VLOG_WDT_INTERVAL       20*1000
 
 //typedef struct CAM_CFG
@@ -69,7 +69,6 @@ private:
     bool check_media_drive();
     void showEvent  (QShowEvent*   event) override;
     void keyReleaseEvent(QKeyEvent* event) override;
-    void start_cam_switch(bool enable);
     void handle_uart_packet(PCK_Header_t& header, int offset);
     void deinit_player();
 Q_SIGNALS:
@@ -85,10 +84,8 @@ private slots:
     void onParse();
 
     void on_blink();
-    void on_moncam_timeout();
-    void on_monloger_timeout();
-    void on_cam_switch(quint8 camNum);
 
+    void onCamSwitch(quint8 camNum);
     void cam_time_synchronized(bool ok);
     void cam_time_difference  (const QDateTime& dt, const qint64& diff);
     void mon_player_events    (const libvlc_event_t event);
@@ -100,18 +97,13 @@ private:
     QList<cam_params_t> readCameraList();
 
     vlc::vlc_player*      m_mon_player   = Q_NULLPTR;
-    QString m_vlog_root  = "d:/rasp_media/VLOG6";
-    int     m_vlog_tmlen = 3600;
+    QString m_vlog_root  ;
     QVector<cam_logger_vlc*>   loggers;
 
-    quint8 camIndex = 0;
     QTimer blinker ;
     QTimer parser  ;
-    QTimer moncam_timer;
-    QTimer monlog_timer;
+
     int                led_state = 1;
-    enum               vlogger_state_e {vl_disable, vl_enable, vl_working};
-    vlogger_state_e    m_vlogger_state = vl_disable;
 
     QByteArray         rxBuf;
     QSerialPort*       uart = Q_NULLPTR;

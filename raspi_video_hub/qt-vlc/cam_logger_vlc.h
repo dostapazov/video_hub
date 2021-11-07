@@ -24,7 +24,6 @@ struct cam_params_t
     QString name;
     QString mrl;
     bool disabled = false;
-    quint32 time_span = 60;
 };
 
 
@@ -42,8 +41,8 @@ public:
     int      get_id    () const   {return   m_params.id;}
     const QString  get_name  () const   {return m_params.name;}
     const QString  get_mrl   () const   {return m_params.mrl;}
-    bool     start_streaming     (const QString _root_folder, int time_length);
-    void     stop_streaming      ();
+    void startStreaming(const QString folder, int timeDuration);
+    void stopStreaming();
 
 private Q_SLOTS:
     void     player_events(const libvlc_event_t event);
@@ -60,10 +59,10 @@ private:
 
     cam_params_t      m_params;
 
-    QString           m_storage_root;
+    QString           mStorageFolder;
     int               m_file_timelen    = 0;
     int               m_network_caching = 300;
-    int               m_time_lenght;
+    int               m_time_duration = 60;
     int               m_timer_id  = 0;
     int               m_check_play_counter = 0;
 
