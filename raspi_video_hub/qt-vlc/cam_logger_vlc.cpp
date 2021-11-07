@@ -20,8 +20,8 @@ cam_logger_vlc::cam_logger_vlc(const cam_params_t& aParams, QObject* parent )
     : QObject(parent)
 {
     m_params = aParams;
-    cuttimer.setSingleShot(true);
-    connect(&cuttimer, &QTimer::timeout, this, &cam_logger_vlc::on_cuttimer_timeout, Qt::ConnectionType::QueuedConnection);
+    cutTimer.setSingleShot(true);
+    connect(&cutTimer, &QTimer::timeout, this, &cam_logger_vlc::nextFile, Qt::ConnectionType::QueuedConnection);
     initPlayerHandlers();
 }
 
@@ -84,7 +84,7 @@ void     cam_logger_vlc::startStreaming(const QString folder, int timeDuration)
 {
     mStorageFolder = folder;
     m_time_duration = timeDuration ;
-    on_cuttimer_timeout();
+    nextFile();
 }
 
 void     cam_logger_vlc::stopStreaming  ()
@@ -166,18 +166,18 @@ void   cam_logger_vlc::player_events(const libvlc_event_t event)
         handler(m_player);
 }
 
-void cam_logger_vlc::on_cuttimer_timeout()
+void cam_logger_vlc::nextFile()
 {
-    if (cuttimer.isActive())
-        cuttimer.stop ();
+    if (cutTimer.isActive())
+        cutTimer.stop ();
     createPlayer();
     vlc::vlc_media* old_media = m_player->set_media(get_next_media());
-
+    m_player->play();
     if (m_file_timelen)
     {
-        m_player->play();
-        cuttimer.start(m_file_timelen + m_network_caching);
+        cutTimer.start(m_file_timelen + m_network_caching);
     }
+
     if (old_media)
         old_media->deleteLater();
 }
@@ -208,8 +208,8 @@ void cam_logger_vlc::OnPlayerPlaying(vlc::vlc_player* player)
     Q_UNUSED(player)
     QString str = tr("%1 player playing").arg(get_name());
     appLog::write(0, str);
-    cuttimer.setInterval(m_file_timelen);
-    cuttimer.start();
+    cutTimer.setInterval(m_file_timelen);
+    cutTimer.start();
 
 }
 
@@ -252,7 +252,6 @@ void      cam_logger_vlc::createPlayer()
             m_player->event_activate(event, true);
         }
         connect(m_player, &vlc::vlc_player::player_event, this, &cam_logger_vlc::player_events, Qt::ConnectionType::QueuedConnection);
-
     }
 }
 
