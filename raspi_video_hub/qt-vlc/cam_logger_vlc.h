@@ -50,6 +50,17 @@ private Q_SLOTS:
     void     player_events(const libvlc_event_t event);
     void     on_cuttimer_timeout();
 private:
+    using player_event_handler_t = std::function<void(vlc::vlc_player*)>;
+    using PlayerEventHandlers = QMap<libvlc_event_e, player_event_handler_t>;
+
+    PlayerEventHandlers playerHandlers;
+    void initPlayerHandlers();
+    void OnPlayerStopped(vlc::vlc_player* player);
+    void OnPlayerPlaying(vlc::vlc_player* player);
+    void OnPlayerError(vlc::vlc_player* player);
+    void OnPlayerPosition(vlc::vlc_player* player);
+    void OnPlayerEndReached(vlc::vlc_player* player);
+
     int       get_time_interval(const QDateTime& dtm);
     QString   get_file_name    (const QDateTime& dtm);
     int       create_next_media();
@@ -60,8 +71,6 @@ private:
     bool      isEventSupport();
 
     QTimer            cuttimer;
-
-
     cam_params_t      m_params;
 
     QString           mStorageFolder;
