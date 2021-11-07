@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include "appconfig.h"
 #include "mainwindow.h"
+
 #include "applog.h"
 #include <qpalette.h>
 #include <signal.h>
@@ -49,6 +50,7 @@ MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent)
 {
     setupUi(this);
+
     appState = PCK_STATE_t {0xFF, 77, 777};
     connect(this, &MainWindow::cam_switch, this, &MainWindow::onCamSwitch, Qt::ConnectionType::QueuedConnection);
     init_gpio  ();
@@ -56,8 +58,11 @@ MainWindow::MainWindow(QWidget* parent) :
 
     blinker.start    ();
     init_libvlc      ();
+    initPlayer ();
     init_uart        ();
     load_config      ();
+    start_cam_monitor();
+    start_loggers();
 }
 
 MainWindow::~MainWindow()
@@ -68,8 +73,6 @@ MainWindow::~MainWindow()
 void MainWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
-    start_cam_monitor();
-    start_loggers();
 }
 
 void MainWindow::init_libvlc()
@@ -176,7 +179,7 @@ void MainWindow::deinit_all()
         delete cl;
     }
 
-    deinit_player();
+    releaseMonPlayer();
 
     if (file_deleter)
     {
@@ -239,6 +242,18 @@ void MainWindow::on_blink()
     blinker.start();
 }
 
+
+void MainWindow::initPlayer()
+{
+    playerHandlers[libvlc_MediaPlayerStopped]  = std::bind(&MainWindow::onPlayerStoped, this, std::placeholders::_1);
+    playerHandlers[libvlc_MediaPlayerPlaying]  = std::bind(&MainWindow::onPlayerPlaying, this, std::placeholders::_1);
+    playerHandlers[libvlc_MediaPlayerEncounteredError] = std::bind(&MainWindow::onPlayerError, this, std::placeholders::_1);;
+    playerHandlers[libvlc_MediaPlayerPositionChanged]  = std::bind(&MainWindow::onPlayerPoschanging, this, std::placeholders::_1);;
+    connect(&playerResponseTimer, &QTimer::timeout, this, &MainWindow::onPlayerResponseTimeout);
+    playerResponseTimer.setInterval(PLAYER_RESPONSE_TIMEOUT);
+}
+
+
 void MainWindow::createPlayer()
 {
     if (!m_mon_player)
@@ -246,12 +261,31 @@ void MainWindow::createPlayer()
         appLog::write(0, "create new mon_player");
         m_mon_player  =  new vlc::vlc_player;
         connect(m_mon_player, &vlc::vlc_player::player_event, this, &MainWindow::mon_player_events, Qt::ConnectionType::QueuedConnection);
-        m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerStopped, true);
-        m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerPlaying, true);
-        m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerEncounteredError, true);
-        m_mon_player->event_activate(libvlc_event_e::libvlc_MediaPlayerPositionChanged, true);
+        for ( auto player_event : playerHandlers.keys() )
+            m_mon_player->event_activate(player_event, true);
     }
 }
+
+void MainWindow::releaseMonPlayer()
+{
+    qDebug() << Q_FUNC_INFO << " begin";
+    if (m_mon_player)
+    {
+        m_mon_player->disconnect();
+        m_mon_player->stop();
+
+        vlc::vlc_media* media = m_mon_player->set_media(nullptr);
+        if (media)
+            media->deleteLater();
+
+
+        m_mon_player->deleteLater();
+        m_mon_player = nullptr;
+    }
+
+    qDebug() << Q_FUNC_INFO << " end";
+}
+
 
 void MainWindow::onCamSwitch(quint8 cam_num)
 {
@@ -265,6 +299,7 @@ void MainWindow::onCamSwitch(quint8 cam_num)
     if ((appState.camId != cam_num || !m_mon_player || !m_mon_player->has_media()) && cam_num < this->loggers.count() )
     {
         createPlayer();
+        show();
         const cam_logger_vlc* clogger = loggers.at(cam_num);
         label->setText(tr("wait data from camera %1 ").arg(clogger->get_name()));
 
@@ -280,53 +315,69 @@ void MainWindow::onCamSwitch(quint8 cam_num)
             if (media)
                 media->deleteLater();
             m_mon_player->play();
-
-#if !defined (DESKTOP_DEBUG_BUILD)
-            m_mon_player->set_fullscreen(true);
-#endif
-
+            playerResponseTimer.start();
         }
     }
 }
+
+void MainWindow::onPlayerStoped(vlc::vlc_player* player)
+{
+    QString str = tr("Mon player stopped ");
+    appLog::write(6, str);
+    qDebug() << str;
+    const cam_logger_vlc* clogger = loggers.at(appState.camId);
+    label->setText(tr("%1 lost connection ").arg(clogger->get_name()));
+}
+
+void MainWindow::onPlayerPlaying(vlc::vlc_player* player)
+{
+    QString str = tr("Mon player playing ");
+    appLog::write(6, str);
+    qDebug() << str;
+    const cam_logger_vlc* clogger = loggers.at(appState.camId);
+    label->setText(tr("%1 working ").arg(clogger->get_name()));
+#if !defined (DESKTOP_DEBUG_BUILD)
+    m_mon_player->set_fullscreen(true);
+#endif
+    hide();
+
+}
+
+void MainWindow::onPlayerError(vlc::vlc_player* player)
+{
+    QString str = tr("Mon player errors %1").arg(player->get_last_errors().join(", "));
+    appLog::write(0, str);
+    if (m_mon_player->has_media())
+        delete m_mon_player->set_media(nullptr);
+}
+
+void MainWindow::onPlayerPoschanging(vlc::vlc_player* player)
+{
+    qDebug() << "Media player position changed " << QTime::currentTime().toString("hh:mm:ss.zzz");
+    playerResponseTimer.stop();
+    playerResponseTimer.start();
+}
+
 
 void MainWindow::mon_player_events    (const libvlc_event_t event)
 {
     vlc::vlc_player* player = const_cast<vlc::vlc_player*>(dynamic_cast<vlc::vlc_player*>(sender()));
     if (player)
     {
-        switch (event.type)
-        {
-            case libvlc_MediaPlayerStopped:
-            {
-                QString str = tr("Mon player stopped ");
-                appLog::write(6, str);
-                const cam_logger_vlc* clogger = loggers.at(appState.camId);
-                label->setText(tr("%1 lost connection ").arg(clogger->get_name()));
-
-            }
-            break;
-            case libvlc_MediaPlayerPlaying:
-            {
-                appLog::write(6, "Mon player playing");
-                const cam_logger_vlc* clogger = loggers.at(appState.camId);
-                label->setText(tr("%1 working ").arg(clogger->get_name()));
-            }
-            break;
-            case libvlc_MediaPlayerEncounteredError:
-            {
-                QString str = tr("Mon player errors %1").arg(player->get_last_errors().join(", "));
-                appLog::write(0, str);
-                if (m_mon_player->has_media())
-                    delete m_mon_player->set_media(nullptr);
-            }
-            break;
-
-            case  libvlc_MediaPlayerPositionChanged:
-                qDebug() << "Media player position changed";
-                break;
-
-        }
+        player_events_handler_t handler = playerHandlers.value(static_cast<libvlc_event_e>(event.type));
+        if (handler)
+            handler(player);
     }
+}
+
+
+void MainWindow::onPlayerResponseTimeout()
+{
+    qDebug() << "Player not responce";
+    releaseMonPlayer();
+    show();
+    setFocus(Qt::FocusReason::PopupFocusReason);
+    onCamSwitch(appState.camId);
 }
 
 void MainWindow::start_cam_monitor()
@@ -427,26 +478,6 @@ void MainWindow::readCPUtemper()
     {
         digitalWrite(PIN_FAN, appState.fanState);
     }
-}
-
-void MainWindow::deinit_player()
-{
-    qDebug() << Q_FUNC_INFO << " begin";
-    if (m_mon_player)
-    {
-        m_mon_player->disconnect();
-        m_mon_player->stop();
-
-        vlc::vlc_media* media = m_mon_player->set_media(nullptr);
-        if (media)
-            media->deleteLater();
-
-
-        m_mon_player->deleteLater();
-        m_mon_player = nullptr;
-    }
-
-    qDebug() << Q_FUNC_INFO << " end";
 }
 
 void MainWindow::on_bTestUpdate_clicked()
