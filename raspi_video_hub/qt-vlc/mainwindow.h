@@ -6,7 +6,6 @@
 #include <QSerialPort>
 #include <QTimer>
 #include "ui_mainwindow.h"
-#include "camtimesync.h"
 #include "filedeleterthread.h"
 #include "cam_logger_vlc.h"
 #include "vlcclasses.hpp"
@@ -55,7 +54,6 @@ protected:
 private:
 
     void start_cam_monitor();
-    void start_time_sync();
     void init_gpio  ();
     void init_libvlc();
     void load_config();
@@ -86,11 +84,7 @@ private slots:
     void on_blink();
 
     void onCamSwitch(quint8 camNum);
-    void cam_time_synchronized(bool ok);
-    void cam_time_difference  (const QDateTime& dt, const qint64& diff);
     void mon_player_events    (const libvlc_event_t event);
-
-
     void on_bTestUpdate_clicked();
 
 private:
@@ -110,7 +104,6 @@ private:
 
     FileDeleterThread* file_deleter = Q_NULLPTR;
 
-    CamTimeSync     cam_time_sync;
     int             cam_time_synchro = -1;
     PCK_STATE_t     appState;
     static const char* const vlcArgs[];
