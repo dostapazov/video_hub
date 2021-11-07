@@ -11,7 +11,6 @@
 
 namespace vlc {
 
-
 vlc_instance*   vlc_instance::vlc_inst = nullptr;
 vlc_instance::vlc_instance()
 {
@@ -32,7 +31,6 @@ const char*    vlc_instance::get_version()
 {
     return libvlc_get_version();
 }
-
 
 const vlc_instance* vlc_instance::get_instance(const int argc, const char*   const argv[] )
 {
@@ -61,8 +59,6 @@ void    vlc_instance::release_instance(libvlc_instance_t*   inst  )
         libvlc_release(inst);
 }
 
-
-
 vlc_media::vlc_media(QObject* parent): QObject(parent)
 {}
 
@@ -90,7 +86,6 @@ vlc_media& vlc_media::operator = (const libvlc_media_t* src )
     libvlc_media_retain(m_media);
     return *this;
 }
-
 
 bool     vlc_media::open_location(const char* mrl, const vlc_instance* inst)
 {
@@ -167,11 +162,9 @@ void    vlc_media::events_activate_all(bool active)
                 libvlc_event_detach(mng, libvlc_MediaStateChanged, event_callback, this);
                 libvlc_event_detach(mng, libvlc_MediaSubItemTreeAdded, event_callback, this);
             }
-
         }
     }
 }
-
 
 void     vlc_media::handle_event  (const libvlc_event_t& event)
 {
@@ -222,9 +215,6 @@ vlc_media* vlc_player::set_media(vlc_media* media)
 {
     if (m_current_media != media)
     {
-//        bool _playing = this->is_playing();
-//        if (_playing)
-//            stop();
         libvlc_media_player_set_media(m_player, media ? const_cast<libvlc_media_t*>((*media)()) : nullptr);
         vlc_media* old_media = m_current_media;
         m_current_media = media;
@@ -233,8 +223,6 @@ vlc_media* vlc_player::set_media(vlc_media* media)
         return old_media;
     }
     return nullptr;
-
-
 }
 
 bool     vlc_player::event_activate(libvlc_event_e event_type, bool active)
@@ -323,14 +311,11 @@ void     vlc_player::events_activate_all(bool active)
     }
 }
 
-
 void    vlc_player::handle_event(const libvlc_event_t& event)
 {
     if (event.type == libvlc_MediaPlayerEncounteredError )
         last_errors.append( QString(libvlc_errmsg()));
-
     emit  player_event(event);
-
 }
 
 void     vlc_player::event_callback( const  libvlc_event_t* _event, void* user_data)
@@ -348,5 +333,4 @@ void     vlc_player::event_callback( const  libvlc_event_t* _event, void* user_d
 }
 
 }// end of  namespace vlc
-
 

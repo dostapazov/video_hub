@@ -21,7 +21,6 @@
 
 #endif
 
-
 const char* const MainWindow::vlcArgs[] =
 {
     "--noaudio",
@@ -34,7 +33,6 @@ const char* const MainWindow::vlcArgs[] =
 #endif
 
 };
-
 
 void MainWindow::initBlinker()
 {
@@ -60,7 +58,6 @@ MainWindow::MainWindow(QWidget* parent) :
     init_libvlc      ();
     init_uart        ();
     load_config      ();
-
 }
 
 MainWindow::~MainWindow()
@@ -83,8 +80,6 @@ void MainWindow::init_libvlc()
     appLog::write(0, vlc_ver);
 }
 
-
-
 void MainWindow::start_file_deleter()
 {
     if (file_deleter && !file_deleter->isRunning())
@@ -106,8 +101,6 @@ void MainWindow::start_file_deleter()
     }
 }
 
-
-
 void MainWindow::closeEvent(QCloseEvent* event)
 {
     Q_UNUSED(event);
@@ -122,7 +115,6 @@ QList<cam_params_t> MainWindow::readCameraList()
     cams.append({1, tr("IPCam100"), tr("rtsp://192.168.0.100:554/media/video1"), false});
     cams.append({1, tr("IPCam101"), tr("rtsp://192.168.0.101:554/media/video1"), false});
 #else
-
 
     cam_params_t cam_param;
 
@@ -171,7 +163,6 @@ void MainWindow::load_config()
 
 }
 
-
 void MainWindow::deinit_all()
 {
     qDebug() << Q_FUNC_INFO << " begin";
@@ -194,7 +185,6 @@ void MainWindow::deinit_all()
         file_deleter->deleteLater();
         file_deleter = Q_NULLPTR;
     }
-
 
     deinitUART   ();
     //appLog::write(2,QString(Q_FUNC_INFO));
@@ -231,7 +221,6 @@ bool MainWindow::check_media_drive()
     return  !m_vlog_root.isEmpty();
 }
 
-
 QString MainWindow::whoami()
 {
     QString res = qgetenv("USER");
@@ -239,7 +228,6 @@ QString MainWindow::whoami()
         res = qgetenv("USERNAME");
     return res;
 }
-
 
 void MainWindow::on_blink()
 {
@@ -297,12 +285,9 @@ void MainWindow::onCamSwitch(quint8 cam_num)
             m_mon_player->set_fullscreen(true);
 #endif
 
-//            moncam_timer.start(CAMERA_WDT_INTERVAL);
-
         }
     }
 }
-
 
 void MainWindow::mon_player_events    (const libvlc_event_t event)
 {
@@ -344,7 +329,6 @@ void MainWindow::mon_player_events    (const libvlc_event_t event)
     }
 }
 
-
 void MainWindow::start_cam_monitor()
 {
     appLog::write(2, "start_cam_monitor next must be start_cam_switch");
@@ -354,17 +338,14 @@ void MainWindow::start_cam_monitor()
 
 void MainWindow::start_loggers()
 {
-    if (m_vlog_root.isEmpty())
+    if (m_vlog_root.isEmpty() && check_media_drive())
     {
-        if (check_media_drive())
-        {
-            start_file_deleter();
-            int timeDuration = appConfig::get_time_duration();
+        start_file_deleter();
+        int timeDuration = appConfig::get_time_duration();
 
-            foreach (cam_logger_vlc* cl, loggers)
-            {
-                cl->startStreaming(m_vlog_root, timeDuration);
-            }
+        foreach (cam_logger_vlc* cl, loggers)
+        {
+            cl->startStreaming(m_vlog_root, timeDuration);
         }
     }
 }
@@ -448,7 +429,6 @@ void MainWindow::readCPUtemper()
     }
 }
 
-
 void MainWindow::deinit_player()
 {
     qDebug() << Q_FUNC_INFO << " begin";
@@ -465,7 +445,6 @@ void MainWindow::deinit_player()
         m_mon_player->deleteLater();
         m_mon_player = nullptr;
     }
-
 
     qDebug() << Q_FUNC_INFO << " end";
 }
@@ -516,7 +495,9 @@ void MainWindow::check_need_update()
     }
 }
 
-quint8 getNextCamId(int count, int current, bool increment)
+#ifdef DESKTOP_DEBUG_BUILD
+
+static quint8 getNextCamId(int count, int current, bool increment)
 {
     current += increment ? 1 : -1;
     if (current < 0 )
@@ -531,7 +512,7 @@ quint8 getNextCamId(int count, int current, bool increment)
 void MainWindow::keyReleaseEvent(QKeyEvent* event)
 {
     QMainWindow::keyReleaseEvent(event);
-#ifdef DESKTOP_DEBUG_BUILD
+
     switch (event->key())
     {
         case Qt::Key_Left:
@@ -548,6 +529,7 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
         default:
             break;
     }
-#endif
 }
+#endif
+
 

@@ -66,9 +66,13 @@ private:
     QString whoami();
     bool check_media_drive();
     void showEvent  (QShowEvent*   event) override;
-    void keyReleaseEvent(QKeyEvent* event) override;
     void handle_uart_packet(PCK_Header_t& header, int offset);
     void deinit_player();
+
+#ifdef DESKTOP_DEBUG_BUILD
+    void keyReleaseEvent(QKeyEvent* event) override;
+#endif
+
 Q_SIGNALS:
     void cam_switch(quint8 cam_id);
 
