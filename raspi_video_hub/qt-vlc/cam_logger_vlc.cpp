@@ -283,6 +283,7 @@ void     cam_logger_vlc::playerHungDetected()
     qDebug() << "Player hung detected!!!";
     Упростить создание vcl_media
     Пересоздать player при обрыве связи
+    удалять файлы нулевой длины
 }
 
 
