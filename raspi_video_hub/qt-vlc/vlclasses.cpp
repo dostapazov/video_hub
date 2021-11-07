@@ -218,8 +218,6 @@ vlc_media* vlc_player::set_media(vlc_media* media)
         libvlc_media_player_set_media(m_player, media ? const_cast<libvlc_media_t*>((*media)()) : nullptr);
         vlc_media* old_media = m_current_media;
         m_current_media = media;
-        if (media && !is_playing())
-            play();
         return old_media;
     }
     return nullptr;

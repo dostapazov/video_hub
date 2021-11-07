@@ -129,20 +129,9 @@ void     cam_logger_vlc::startStreaming(const QString folder, int timeDuration)
 //    return true;
 }
 
-void     cam_logger_vlc::stopStreaming       ()
+void     cam_logger_vlc::stopStreaming  ()
 {
-
-    if (m_player)
-    {
-        m_player->disconnect();
-        m_player->stop();
-        if (m_player->has_media())
-            delete m_player->set_media(Q_NULLPTR);
-        delete m_player;
-        m_player = Q_NULLPTR;
-    }
-    if (m_timer_id)
-        killTimer(m_timer_id);
+    releasePlayer();
 }
 
 int     cam_logger_vlc::create_next_media()
@@ -260,4 +249,30 @@ void cam_logger_vlc::on_cuttimer_timeout()
     if (old_media)
         old_media->deleteLater();
 }
+
+
+void      cam_logger_vlc::createPlayer()
+{
+
+}
+
+void      cam_logger_vlc::releasePlayer()
+{
+    if (m_player)
+    {
+        m_player->disconnect();
+        m_player->stop();
+
+        vlc::vlc_media* media = m_player->set_media(nullptr);
+
+        if (media)
+            media->deleteLater();
+
+
+        m_player->deleteLater();
+        m_player = nullptr;
+    }
+
+}
+
 

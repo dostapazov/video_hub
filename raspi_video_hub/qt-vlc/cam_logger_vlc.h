@@ -68,7 +68,6 @@ private:
     int               m_file_timelen    = 0;
     int               m_network_caching = 300;
     int               m_time_duration = 60;
-    int               m_timer_id  = 0;
     int               m_check_play_counter = 0;
 
     vlc::vlc_player*  m_player     = nullptr;

@@ -286,8 +286,6 @@ void MainWindow::releaseMonPlayer()
         vlc::vlc_media* media = m_mon_player->set_media(nullptr);
         if (media)
             media->deleteLater();
-
-
         m_mon_player->deleteLater();
         m_mon_player = nullptr;
     }
@@ -347,9 +345,9 @@ void MainWindow::onPlayerPlaying(vlc::vlc_player* player)
     qDebug() << str;
     const cam_logger_vlc* clogger = loggers.at(appState.camId);
     label->setText(tr("%1 working ").arg(clogger->get_name()));
-//#if !defined (DESKTOP_DEBUG_BUILD)
+#if !defined (DESKTOP_DEBUG_BUILD)
     m_mon_player->set_fullscreen(true);
-//#endif
+#endif
     //hide();
 
 }
