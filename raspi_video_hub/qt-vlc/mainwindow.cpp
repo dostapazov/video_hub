@@ -63,6 +63,12 @@ MainWindow::MainWindow(QWidget* parent) :
     load_config      ();
     start_cam_monitor();
     start_loggers();
+#if defined (DESKTOP_DEBUG_BUILD)
+    show();
+#else
+    showFullScreen();
+#endif
+
 }
 
 MainWindow::~MainWindow()
@@ -299,7 +305,7 @@ void MainWindow::onCamSwitch(quint8 cam_num)
     if ((appState.camId != cam_num || !m_mon_player || !m_mon_player->has_media()) && cam_num < this->loggers.count() )
     {
         createPlayer();
-        show();
+        //show();
         const cam_logger_vlc* clogger = loggers.at(cam_num);
         label->setText(tr("wait data from camera %1 ").arg(clogger->get_name()));
 
@@ -322,6 +328,7 @@ void MainWindow::onCamSwitch(quint8 cam_num)
 
 void MainWindow::onPlayerStoped(vlc::vlc_player* player)
 {
+    Q_UNUSED(player)
     QString str = tr("Mon player stopped ");
     appLog::write(6, str);
     qDebug() << str;
@@ -331,20 +338,22 @@ void MainWindow::onPlayerStoped(vlc::vlc_player* player)
 
 void MainWindow::onPlayerPlaying(vlc::vlc_player* player)
 {
+    Q_UNUSED(player)
     QString str = tr("Mon player playing ");
     appLog::write(6, str);
     qDebug() << str;
     const cam_logger_vlc* clogger = loggers.at(appState.camId);
     label->setText(tr("%1 working ").arg(clogger->get_name()));
-#if !defined (DESKTOP_DEBUG_BUILD)
+//#if !defined (DESKTOP_DEBUG_BUILD)
     m_mon_player->set_fullscreen(true);
-#endif
-    hide();
+//#endif
+    //hide();
 
 }
 
 void MainWindow::onPlayerError(vlc::vlc_player* player)
 {
+    Q_UNUSED(player)
     QString str = tr("Mon player errors %1").arg(player->get_last_errors().join(", "));
     appLog::write(0, str);
     if (m_mon_player->has_media())
@@ -353,6 +362,7 @@ void MainWindow::onPlayerError(vlc::vlc_player* player)
 
 void MainWindow::onPlayerPoschanging(vlc::vlc_player* player)
 {
+    Q_UNUSED(player)
     qDebug() << "Media player position changed " << QTime::currentTime().toString("hh:mm:ss.zzz");
     playerResponseTimer.stop();
     playerResponseTimer.start();

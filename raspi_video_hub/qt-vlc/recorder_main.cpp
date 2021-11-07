@@ -34,11 +34,6 @@ int main_recorder(int argc, char* argv[])
 
     appLog::init(logFileName, logLevel);
     MainWindow w;
-#if defined (DESKTOP_DEBUG_BUILD)
-    w.show();
-#else
-    w.showFullScreen();
-#endif
     int res = a.exec();
     appLog::deinit();
     return res;
