@@ -316,7 +316,6 @@ void MainWindow::onCamSwitch(quint8 cam_num)
         vlc::vlc_media* media = new vlc::vlc_media;
         if (media->open_location(clogger->get_mrl().toLocal8Bit().constData()))
         {
-
             media->add_option(":rtsp-timeout=5000");
             media = m_mon_player->set_media(media);
             if (media)
@@ -326,6 +325,7 @@ void MainWindow::onCamSwitch(quint8 cam_num)
         }
     }
 }
+
 
 void MainWindow::onPlayerStoped(vlc::vlc_player* player)
 {
@@ -364,7 +364,7 @@ void MainWindow::onPlayerError(vlc::vlc_player* player)
 void MainWindow::onPlayerPoschanging(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
-    qDebug() << "Media player position changed " << QTime::currentTime().toString("hh:mm:ss.zzz");
+    //qDebug() << "Media player position changed " << QTime::currentTime().toString("hh:mm:ss.zzz");
     playerResponseTimer.stop();
     playerResponseTimer.start();
 }

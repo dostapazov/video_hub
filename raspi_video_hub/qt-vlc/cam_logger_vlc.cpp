@@ -22,6 +22,9 @@ cam_logger_vlc::cam_logger_vlc(const cam_params_t& aParams, QObject* parent )
     m_params = aParams;
     cutTimer.setSingleShot(true);
     connect(&cutTimer, &QTimer::timeout, this, &cam_logger_vlc::nextFile, Qt::ConnectionType::QueuedConnection);
+
+    playerWatchDog.setInterval(PLAYER_RESPONSE_TIMEOUT);
+    connect(&playerWatchDog, &QTimer::timeout, this, &cam_logger_vlc::playerHungDetected, Qt::ConnectionType::QueuedConnection);
     initPlayerHandlers();
 }
 
@@ -41,10 +44,8 @@ bool cam_logger_vlc::isEventSupport()
 
 int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
 {
-    //const int msec_in_hour = 3600*1000;
-    int interval = 10 * 60 * 1000;// 10 минут
+    int interval = 1 * 60 * 1000;// 1 минуа
     return interval;
-
 }
 
 QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
@@ -58,11 +59,11 @@ QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
         dir.mkpath(spath);
     int counter = 0;
 
-    auto get_file_name = [this, spath, dtm, counter]()
+    auto get_uniq_name = [this, spath, dtm, counter]()
     {
         QString ret = QString("%1/%2_%3").arg(spath).arg(get_name()).arg(dtm.toString("yyyy-MM-dd_hh-mm-ss"));
         if (counter)
-            ret += QString("_%").arg(counter);
+            ret += QString("_%1").arg(counter);
         ret += ".mp4";
         return ret;
     };
@@ -71,7 +72,8 @@ QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
 
     do
     {
-        file_name = get_file_name();
+        file_name = get_uniq_name();
+        ++counter;
     }
     while (QFile::exists(file_name));
 
@@ -99,19 +101,22 @@ void cam_logger_vlc::setupMediaForStreaming()
     QString str;
     QDateTime dtm     = QDateTime::currentDateTime();
     m_file_timelen    = get_time_interval(dtm);
-    QString file_name = get_file_name(dtm);
+    if (m_file_timelen)
+    {
+        QString file_name = get_file_name(dtm);
 
-    m_next_media->add_option(":no-audio");
-    m_next_media->add_option(":no-overlay");
-    m_next_media->add_option(":sout-mp4-faststart");
+        m_next_media->add_option(":no-audio");
+        m_next_media->add_option(":no-overlay");
+        m_next_media->add_option(":sout-mp4-faststart");
 
-    str = tr(":network-caching=%1").arg(m_network_caching);
-    m_next_media->add_option(str.toLocal8Bit().constData());
+        str = tr(":network-caching=%1").arg(m_network_caching);
+        m_next_media->add_option(str.toLocal8Bit().constData());
 
 
-    str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(file_name);
-    m_next_media->add_option(str.toLocal8Bit().constData());
-    m_next_media->add_option(":demux=h264");
+        str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(file_name);
+        m_next_media->add_option(str.toLocal8Bit().constData());
+        m_next_media->add_option(":demux=h264");
+    }
 }
 
 int     cam_logger_vlc::create_next_media()
@@ -170,14 +175,11 @@ void cam_logger_vlc::nextFile()
 {
     if (cutTimer.isActive())
         cutTimer.stop ();
+
     createPlayer();
+
     vlc::vlc_media* old_media = m_player->set_media(get_next_media());
     m_player->play();
-    if (m_file_timelen)
-    {
-        cutTimer.start(m_file_timelen + m_network_caching);
-    }
-
     if (old_media)
         old_media->deleteLater();
 }
@@ -237,7 +239,9 @@ void cam_logger_vlc::OnPlayerPosition(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
     QString str = tr("%1 player position changed").arg(get_name());
-    qDebug() << str;
+    playerWatchDog.stop();
+    playerWatchDog.start();
+    //qDebug() << str;
 }
 
 
@@ -272,6 +276,13 @@ void      cam_logger_vlc::releasePlayer()
         m_player = nullptr;
     }
 
+}
+
+void     cam_logger_vlc::playerHungDetected()
+{
+    qDebug() << "Player hung detected!!!";
+    Упростить создание vcl_media
+    Пересоздать player при обрыве связи
 }
 
 
