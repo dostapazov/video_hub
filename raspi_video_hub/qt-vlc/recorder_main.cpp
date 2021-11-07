@@ -13,24 +13,10 @@ int main_recorder(int argc, char* argv[])
     QString logFileName;
     int logLevel = 0;
 
-#ifdef DESKTOP_DEBUG_BUILD
-    QString raspFolder;
-#ifdef Q_OS_LINUX
-    raspFolder = "~/rasp_media/";
-#endif
-    raspFolder = "t:/rasp_media/";
-#ifdef Q_OS_WIN
 
-#endif
 
-    logFileName = raspFolder + "log/vhub.log";
-    appConfig::setValue("VLOG/MountPoint", raspFolder);
-    appConfig::setValue("VLOG/Folder", "medialog");
-    appConfig::setValue("COMMON/video_length", 2);
-#else
-    logFileName = appConfig::value("TLOG/FILE").toString();
-    logLevel = appConfig::value("TLOG/LEVEL").toInt();
-#endif
+    logFileName = appConfig::get_log_name();
+    logLevel = appConfig::get_log_level();
 
     appLog::init(logFileName, logLevel);
     MainWindow w;

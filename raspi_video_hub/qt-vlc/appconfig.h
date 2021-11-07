@@ -31,6 +31,8 @@ public:
     static bool        get_cam_logdisabled (QString camName);
     static QString     get_mount_point();
     static QString     get_log_folder();
+    static QString     get_log_name();
+    static int         get_log_level();
 
 
 

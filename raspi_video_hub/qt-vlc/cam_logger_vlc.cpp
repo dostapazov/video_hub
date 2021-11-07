@@ -14,7 +14,7 @@
 #include "applog.h"
 
 
-#define VLC_VER_EVENT_WORK 4
+
 
 cam_logger_vlc::cam_logger_vlc(const cam_params_t& aParams, QObject* parent )
     : QObject(parent)
@@ -23,10 +23,6 @@ cam_logger_vlc::cam_logger_vlc(const cam_params_t& aParams, QObject* parent )
     m_params = aParams;
     cuttimer.setSingleShot(true);
     connect(&cuttimer, &QTimer::timeout, this, &cam_logger_vlc::on_cuttimer_timeout, Qt::ConnectionType::QueuedConnection);
-    QString     str  = vlc::vlc_instance::get_version();
-    QStringList sl = str.split(".");
-    is_event_method =  (sl.size() > 1 && sl.at(0).toInt() >= VLC_VER_EVENT_WORK) ? true : false;
-    appLog::write(0, tr("player version %1  events ").arg(is_event_method ? "support" : "not support"));
 }
 
 cam_logger_vlc::~cam_logger_vlc()
@@ -35,33 +31,12 @@ cam_logger_vlc::~cam_logger_vlc()
     QThread::msleep(200);
 }
 
-void        cam_logger_vlc::timerEvent       (QTimerEvent* event)
+bool cam_logger_vlc::isEventSupport()
 {
-    if (event->timerId() == m_timer_id)
-    {
-        if (m_player)
-        {
-            libvlc_state_t ps =  m_player->get_state();
-            if (ps != libvlc_state_t::libvlc_Playing )
-            {
-                if (++m_check_play_counter > 10)
-                {
-                    QString str = tr("%1 WRONG state %2").arg(get_name()).arg(ps);
-                    appLog::write(0, str);
-                    qDebug() << str;
-                    m_player->stop();
-                    m_file_timelen = 0;
-                    if (!is_event_method)
-                        on_cuttimer_timeout();
-                    m_check_play_counter = 0;
-                }
-            }
-            else
-                m_check_play_counter = 0;
-        }
-    }
-    else
-        QObject::timerEvent(event);
+    constexpr int VLC_VER_EVENT_WORK = 3;
+    QString     str  = vlc::vlc_instance::get_version();
+    QStringList sl = str.split(".");
+    return  (sl.size() > 1 && sl.at(0).toInt() >= VLC_VER_EVENT_WORK) ? true : false;
 }
 
 int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
@@ -201,14 +176,14 @@ int     cam_logger_vlc::create_next_media()
             m_next_media->add_option(str.toLocal8Bit().constData());
             div_t t     = div(m_file_timelen, 1000);
 
-            if (this->is_event_method)
-            {
-                str = tr(":stop-time=%1.%2").arg(t.quot).arg(t.rem, 3, 10, QLatin1Char('0'));
-                m_next_media->add_option(str.toLocal8Bit().constData());
-            }
-//            str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(file_name);
-//            m_next_media->add_option(str.toLocal8Bit().constData());
-//            m_next_media->add_option(":demux=h264");
+//            if (this->is_event_method)
+//            {
+//                str = tr(":stop-time=%1.%2").arg(t.quot).arg(t.rem, 3, 10, QLatin1Char('0'));
+//                m_next_media->add_option(str.toLocal8Bit().constData());
+//            }
+            str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(file_name);
+            m_next_media->add_option(str.toLocal8Bit().constData());
+            m_next_media->add_option(":demux=h264");
             str = tr("%1 create next media  interval %2.%3").arg(get_name()).arg(t.quot).arg(t.rem);
         }
         else
@@ -275,8 +250,6 @@ void cam_logger_vlc::on_cuttimer_timeout()
     if (cuttimer.isActive())
         cuttimer.stop ();
 
-//  if(m_player->is_playing())
-//      m_player->stop(100);
     vlc::vlc_media* old_media = m_player->set_media(get_next_media());
 
     if (m_file_timelen)

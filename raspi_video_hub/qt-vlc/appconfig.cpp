@@ -101,4 +101,29 @@ QString     appConfig::get_log_folder()
     return value("VLOG/Folder").toString();
 }
 
+QString     appConfig::get_log_name()
+{
+    constexpr const char* key = "TLOG/FILE";
+    QString logName = value(key).toString();
+    if (logName.isEmpty())
+    {
+        logName =   "vhub.log";
+        setValue(key, logName);
+    }
+    return logName;
+}
+
+int         appConfig::get_log_level()
+{
+    constexpr const char* key = "TLOG/LEVEL";
+    QString level = value(key).toString();
+    if (level.isEmpty())
+    {
+        level = "100";
+        setValue(key, level.toInt());
+    }
+    return level.toInt();
+}
+
+
 

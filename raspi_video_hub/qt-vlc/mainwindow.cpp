@@ -158,12 +158,12 @@ void MainWindow::load_config()
         appLog::write(0, str);
     }
 
-    appConfig::setValue("VLOG/MountPoint", "~/raspi_log/");
+
 #ifdef DESKTOP_DEBUG_BUILD
     appConfig::setValue("VLOG/Folder", "streaming");
 
 #ifdef Q_OS_LINUX
-    appConfig::setValue("VLOG/MountPoint", "~/raspi_log/");
+    appConfig::setValue("VLOG/MountPoint", "/home/dostapazov/raspi_log/");
 #else
     appConfig::setValue("VLOG/MountPoint", "d:/raspi_log/");
 #endif
@@ -207,6 +207,9 @@ static void addFolder(QString& path, const QString& folder)
         path += slash;
 
     path += folder.startsWith(slash) ? folder.mid(1) : folder;
+
+    if (!path.endsWith(slash))
+        path += slash;
 }
 
 bool MainWindow::check_media_drive()
@@ -215,7 +218,7 @@ bool MainWindow::check_media_drive()
     addFolder(strPath, whoami());
     addFolder(strPath, appConfig::get_log_folder());
 
-    appLog::write(0,  tr("check existing dir %1").arg(strPath));
+    appLog::write(0,  tr("check existing streamig dir %1").arg(strPath));
     if ( QDir(strPath).exists() )
     {
 
