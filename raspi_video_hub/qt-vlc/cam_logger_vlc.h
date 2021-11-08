@@ -64,11 +64,11 @@ private:
 
     int       get_time_interval(const QDateTime& dtm);
     QString   get_file_name    (const QDateTime& dtm);
-    int       create_next_media();
-    vlc::vlc_media* get_next_media   ();
+    vlc::vlc_media*  create_media();
+    int setupMediaForStreaming(vlc::vlc_media* media);
+
     void      createPlayer();
     void      releasePlayer();
-
     bool      isEventSupport();
 
     cam_params_t      m_params;
@@ -84,9 +84,6 @@ private:
     int               m_check_play_counter = 0;
 
     vlc::vlc_player*  m_player     = nullptr;
-    vlc::vlc_media*   m_next_media = nullptr;
-
-    void setupMediaForStreaming();
 };
 
 #endif // CAM_LOGGER_H
