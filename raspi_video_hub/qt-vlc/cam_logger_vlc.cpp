@@ -44,7 +44,7 @@ bool cam_logger_vlc::isEventSupport()
 
 int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
 {
-    int interval = 1 * 60 * 1000;// 1 минуа
+    int interval = 60 * 60 * 1000;// 1 час
     return interval;
 }
 
@@ -155,6 +155,7 @@ void   cam_logger_vlc::player_events(const libvlc_event_t event)
 
 void cam_logger_vlc::nextFile()
 {
+    qDebug() << this->get_name() << "  -- next file";
     if (cutTimer.isActive())
         cutTimer.stop ();
 
@@ -165,6 +166,7 @@ void cam_logger_vlc::nextFile()
     m_player->play();
     if (media)
         media->deleteLater();
+    playerWatchDog.start();
 }
 
 
@@ -227,8 +229,6 @@ void cam_logger_vlc::OnPlayerPosition(vlc::vlc_player* player)
 
 }
 
-
-
 void      cam_logger_vlc::createPlayer()
 {
     if (!m_player)
@@ -265,6 +265,7 @@ void      cam_logger_vlc::releasePlayer()
 void     cam_logger_vlc::playerHungDetected()
 {
     qDebug() << "Player hung detected!!!";
+    nextFile();
 }
 
 //    Пересоздать player при обрыве связи
