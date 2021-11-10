@@ -90,6 +90,7 @@ public:
     explicit vlc_player(const vlc_instance* inst = nullptr, QObject* parent = nullptr);
     virtual ~vlc_player();
     vlc_media* set_media(vlc_media* media);
+    bool     hasMedia() {return  m_current_media;};
     bool     event_activate(libvlc_event_e event_type, bool active);
     void     events_activate_all(bool active);
     bool     is_playing();
@@ -117,8 +118,8 @@ Q_SIGNALS:
 
 private:
     libvlc_media_player_t* m_player = nullptr;
-    vlc_media*              m_current_media   = nullptr;
-    QStringList           last_errors;
+    vlc_media*             m_current_media   = nullptr;
+    QStringList            last_errors;
     void           handle_event  (const libvlc_event_t& event)  ;
     static void           event_callback( const libvlc_event_t*, void* user_data);
 };

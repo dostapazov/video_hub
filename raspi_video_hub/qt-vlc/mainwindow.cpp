@@ -158,12 +158,12 @@ void MainWindow::load_config()
         appLog::write(0, str);
     }
 
-    appConfig::setValue("VLOG/MountPoint", "~/raspi_log/");
+
 #ifdef DESKTOP_DEBUG_BUILD
     appConfig::setValue("VLOG/Folder", "streaming");
 
 #ifdef Q_OS_LINUX
-    appConfig::setValue("VLOG/MountPoint", "~/raspi_log/");
+    appConfig::setValue("VLOG/MountPoint", "/home/dostapazov/raspi_log/");
 #else
     appConfig::setValue("VLOG/MountPoint", "d:/raspi_log/");
 #endif
@@ -207,6 +207,9 @@ static void addFolder(QString& path, const QString& folder)
         path += slash;
 
     path += folder.startsWith(slash) ? folder.mid(1) : folder;
+
+    if (!path.endsWith(slash))
+        path += slash;
 }
 
 bool MainWindow::check_media_drive()
@@ -215,7 +218,7 @@ bool MainWindow::check_media_drive()
     addFolder(strPath, whoami());
     addFolder(strPath, appConfig::get_log_folder());
 
-    appLog::write(0,  tr("check existing dir %1").arg(strPath));
+    appLog::write(0,  tr("check existing streamig dir %1").arg(strPath));
     if ( QDir(strPath).exists() )
     {
 
@@ -283,8 +286,6 @@ void MainWindow::releaseMonPlayer()
         vlc::vlc_media* media = m_mon_player->set_media(nullptr);
         if (media)
             media->deleteLater();
-
-
         m_mon_player->deleteLater();
         m_mon_player = nullptr;
     }
@@ -315,7 +316,6 @@ void MainWindow::onCamSwitch(quint8 cam_num)
         vlc::vlc_media* media = new vlc::vlc_media;
         if (media->open_location(clogger->get_mrl().toLocal8Bit().constData()))
         {
-
             media->add_option(":rtsp-timeout=5000");
             media = m_mon_player->set_media(media);
             if (media)
@@ -325,6 +325,7 @@ void MainWindow::onCamSwitch(quint8 cam_num)
         }
     }
 }
+
 
 void MainWindow::onPlayerStoped(vlc::vlc_player* player)
 {
@@ -344,9 +345,9 @@ void MainWindow::onPlayerPlaying(vlc::vlc_player* player)
     qDebug() << str;
     const cam_logger_vlc* clogger = loggers.at(appState.camId);
     label->setText(tr("%1 working ").arg(clogger->get_name()));
-//#if !defined (DESKTOP_DEBUG_BUILD)
+#if !defined (DESKTOP_DEBUG_BUILD)
     m_mon_player->set_fullscreen(true);
-//#endif
+#endif
     //hide();
 
 }
@@ -363,7 +364,7 @@ void MainWindow::onPlayerError(vlc::vlc_player* player)
 void MainWindow::onPlayerPoschanging(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
-    qDebug() << "Media player position changed " << QTime::currentTime().toString("hh:mm:ss.zzz");
+    //qDebug() << "Media player position changed " << QTime::currentTime().toString("hh:mm:ss.zzz");
     playerResponseTimer.stop();
     playerResponseTimer.start();
 }

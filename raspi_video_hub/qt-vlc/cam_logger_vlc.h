@@ -13,6 +13,8 @@
 #define CAM_LOGGER_H
 
 #include <QtCore/QObject>
+#include <QMap>
+#include <functional>
 #include "vlcclasses.hpp"
 #include <qtimer.h>
 
@@ -46,48 +48,42 @@ public:
 
 private Q_SLOTS:
     void     player_events(const libvlc_event_t event);
-    void     on_cuttimer_timeout();
+    void     nextFile();
+    void     playerHungDetected();
 private:
-    void     timerEvent       (QTimerEvent* event);
-    int      get_time_interval(const QDateTime& dtm);
-    QString     get_file_name    (const QDateTime& dtm);
-    int create_next_media();
-    vlc::vlc_media*    get_next_media   ();
+    using player_event_handler_t = std::function<void(vlc::vlc_player*)>;
+    using PlayerEventHandlers = QMap<libvlc_event_e, player_event_handler_t>;
 
-    QTimer            cuttimer;
-    bool              is_event_method = false;
+    PlayerEventHandlers playerHandlers;
+    void initPlayerHandlers();
+    void OnPlayerStopped(vlc::vlc_player* player);
+    void OnPlayerPlaying(vlc::vlc_player* player);
+    void OnPlayerError(vlc::vlc_player* player);
+    void OnPlayerPosition(vlc::vlc_player* player);
+    void OnPlayerEndReached(vlc::vlc_player* player);
+
+    int       get_time_interval(const QDateTime& dtm);
+    QString   get_file_name    (const QDateTime& dtm);
+    vlc::vlc_media*  create_media();
+    int setupMediaForStreaming(vlc::vlc_media* media);
+
+    void      createPlayer();
+    void      releasePlayer();
+    bool      isEventSupport();
 
     cam_params_t      m_params;
+
+    QTimer            cutTimer;
+    static constexpr  int PLAYER_RESPONSE_TIMEOUT = 10000;
+    QTimer            playerWatchDog;
 
     QString           mStorageFolder;
     int               m_file_timelen    = 0;
     int               m_network_caching = 300;
-    int               m_time_duration = 60;
-    int               m_timer_id  = 0;
+    int               m_time_duration = 60; // Duration in minutes
     int               m_check_play_counter = 0;
 
-    vlc::vlc_player*    m_player     = nullptr;
-    vlc::vlc_media*     m_next_media = nullptr;
-
+    vlc::vlc_player*  m_player     = nullptr;
 };
-
-struct cam_logger_less
-{
-    bool operator ()(const cam_logger_vlc& cm1, const cam_logger_vlc& cm2)
-    {
-        return cm1.get_id() < cm2.get_id();
-    }
-
-    bool operator ()(const cam_logger_vlc* const cm1, const cam_logger_vlc* const cm2)
-    {
-        if (cm1 && cm2 )
-            return (*this)(*cm1, *cm2);
-        if (!cm1)
-            return true;
-        if (!cm2)
-            return false;
-    }
-};
-
 
 #endif // CAM_LOGGER_H
