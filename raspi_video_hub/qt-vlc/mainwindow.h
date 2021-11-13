@@ -46,10 +46,8 @@ private slots:
     void on_blink();
     void onCamSwitch(quint8 camNum);
     void mon_player_events    (const libvlc_event_t event);
-    void onPlayerResponseTimeout();
+
     void on_bTestUpdate_clicked();
-
-
 
 private:
     void closeEvent(QCloseEvent* event) override;
@@ -60,8 +58,6 @@ private:
 
 
     void initBlinker();
-    void createPlayer();
-    void releasePlayer();
 
     void start_cam_monitor();
     void init_gpio  ();
@@ -77,27 +73,24 @@ private:
     bool check_media_drive();
     void handle_uart_packet(PCK_Header_t& header, int offset);
     void setSystemDateTime(QDateTime dt);
-    void initPlayer();
 
-    void onPlayerStoped(vlc::vlc_player* player);
-    void onPlayerPlaying(vlc::vlc_player* player);
-    void onPlayerError(vlc::vlc_player* player);
-    void onPlayerPoschanging(vlc::vlc_player* player);
-
-
-    using  player_events_handler_t = std::function<void(vlc::vlc_player*)>;
-    using  PlayerHandlers = QMap<libvlc_event_e, player_events_handler_t>;
     QString m_vlog_root  ;
 
-    PlayerHandlers playerHandlers;
-    vlc::vlc_player*      m_mon_player   = Q_NULLPTR;
 
     static constexpr int PLAYER_RESPONSE_TIMEOUT = 10000;
     QTimer playerResponseTimer;
 
     QList<cam_params_t> readCameraList();
+
     QVector<cam_logger_vlc*>   loggers;
     cam_logger_vlc* mon_logger = nullptr;
+    cam_logger_vlc::PlayerEventHandlers eventHandlers;
+    void initEventHandlers();
+    void onPlayStart(vlc::vlc_player* player);
+    void onPlayStop(vlc::vlc_player* player);
+    void onPlayError(vlc::vlc_player* player);
+
+
 
     QTimer blinker ;
     QTimer parser  ;

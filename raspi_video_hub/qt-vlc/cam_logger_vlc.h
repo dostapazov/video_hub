@@ -47,14 +47,20 @@ public:
     void startStreaming(const QString folder, int timeDuration);
     void stopStreaming();
     vlc::vlc_player* createPlayer(QWidget* drawable = nullptr);
+    vlc::vlc_player* getPlayer() {return  m_player;}
+
+    using player_event_handler_t = std::function<void(vlc::vlc_player*)>;
+    using PlayerEventHandlers = QMap<libvlc_event_e, player_event_handler_t>;
+
+signals :
+    void on_player_events (const libvlc_event_t event);
 
 private Q_SLOTS:
+
     void     player_events(const libvlc_event_t event);
     void     nextFile();
 
 private:
-    using player_event_handler_t = std::function<void(vlc::vlc_player*)>;
-    using PlayerEventHandlers = QMap<libvlc_event_e, player_event_handler_t>;
 
     PlayerEventHandlers playerHandlers;
     void initPlayerHandlers();

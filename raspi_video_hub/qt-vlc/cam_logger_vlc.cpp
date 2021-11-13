@@ -158,12 +158,6 @@ vlc::vlc_media*  cam_logger_vlc::create_media()
     return media;
 }
 
-void   cam_logger_vlc::player_events(const libvlc_event_t event)
-{
-    player_event_handler_t handler = playerHandlers.value(static_cast<libvlc_event_e>(event.type));
-    if (handler)
-        handler(m_player);
-}
 
 void cam_logger_vlc::nextFile()
 {
@@ -221,6 +215,14 @@ void cam_logger_vlc::OnPlayerError(vlc::vlc_player* player)
 
 }
 
+void   cam_logger_vlc::player_events(const libvlc_event_t event)
+{
+    player_event_handler_t handler = playerHandlers.value(static_cast<libvlc_event_e>(event.type));
+    if (handler)
+        handler(m_player);
+}
+
+
 
 void cam_logger_vlc::OnPlayerEndReached(vlc::vlc_player* player)
 {
@@ -238,6 +240,7 @@ vlc::vlc_player*   cam_logger_vlc::createPlayer(QWidget* drawable)
     {
         m_player = new vlc::vlc_player;
         connect(m_player, &vlc::vlc_player::player_event, this, &cam_logger_vlc::player_events, Qt::ConnectionType::QueuedConnection);
+        connect(m_player, &vlc::vlc_player::player_event, this, &cam_logger_vlc::on_player_events, Qt::ConnectionType::QueuedConnection);
         if (drawable)
             m_player->set_drawable(drawable->winId());
 
