@@ -12,7 +12,7 @@
 #ifndef CAM_LOGGER_H
 #define CAM_LOGGER_H
 
-#include <QtCore/QObject>
+#include <QWidget>
 #include <QMap>
 #include <functional>
 #include "vlcclasses.hpp"
@@ -43,13 +43,15 @@ public:
     int      get_id    () const   {return   m_params.id;}
     const QString  get_name  () const   {return m_params.name;}
     const QString  get_mrl   () const   {return m_params.mrl;}
+    void set_mrl(const QString& mrl);
     void startStreaming(const QString folder, int timeDuration);
     void stopStreaming();
+    vlc::vlc_player* createPlayer(QWidget* drawable = nullptr);
 
 private Q_SLOTS:
     void     player_events(const libvlc_event_t event);
     void     nextFile();
-    void     playerHungDetected();
+
 private:
     using player_event_handler_t = std::function<void(vlc::vlc_player*)>;
     using PlayerEventHandlers = QMap<libvlc_event_e, player_event_handler_t>;
@@ -59,7 +61,7 @@ private:
     void OnPlayerStopped(vlc::vlc_player* player);
     void OnPlayerPlaying(vlc::vlc_player* player);
     void OnPlayerError(vlc::vlc_player* player);
-    void OnPlayerPosition(vlc::vlc_player* player);
+    //void OnPlayerPosition(vlc::vlc_player* player);
     void OnPlayerEndReached(vlc::vlc_player* player);
 
     int       get_time_interval(const QDateTime& dtm);
@@ -67,15 +69,13 @@ private:
     vlc::vlc_media*  create_media();
     int setupMediaForStreaming(vlc::vlc_media* media);
 
-    void      createPlayer();
+
     void      releasePlayer();
     bool      isEventSupport();
 
     cam_params_t      m_params;
 
     QTimer            cutTimer;
-    static constexpr  int PLAYER_RESPONSE_TIMEOUT = 10000;
-    QTimer            playerWatchDog;
 
     QString           mStorageFolder;
     int               m_file_timelen    = 0;

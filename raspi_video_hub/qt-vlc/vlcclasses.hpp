@@ -68,7 +68,6 @@ public :
     bool get_stats(libvlc_media_stats_t* p_stats );
     libvlc_time_t get_duration();
     bool          event_activate(libvlc_event_e event_type, bool activate );
-    void          events_activate_all(bool active);
     void*         user_data();
     void          set_user_data(void* data);
 
@@ -92,13 +91,12 @@ public:
     vlc_media* set_media(vlc_media* media);
     bool     hasMedia() {return  m_current_media;};
     bool     event_activate(libvlc_event_e event_type, bool active);
-    void     events_activate_all(bool active);
     bool     is_playing();
     bool     play();
     bool     pause();
     bool     stop(int timeout = 50);
-
     bool     has_media() {return m_current_media ? true : false;}
+    bool     open_mrl(const QString& mrl);
     bool     is_fullscreen();
     void     set_fullscreen(bool full);
     QStringList    get_last_errors();

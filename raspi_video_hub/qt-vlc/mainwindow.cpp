@@ -48,6 +48,7 @@ void MainWindow::initBlinker()
 
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent)
+
 {
     setupUi(this);
 
@@ -61,8 +62,8 @@ MainWindow::MainWindow(QWidget* parent) :
     initPlayer ();
     init_uart        ();
     load_config      ();
-    start_cam_monitor();
     start_loggers();
+
 #if defined (DESKTOP_DEBUG_BUILD)
     show();
 #else
@@ -79,6 +80,8 @@ MainWindow::~MainWindow()
 void MainWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
+    m_playerWindow.show();
+    start_cam_monitor();
 }
 
 void MainWindow::init_libvlc()
@@ -182,10 +185,16 @@ void MainWindow::deinit_all()
     foreach (cam_logger_vlc* cl, this->loggers)
     {
         cl->stopStreaming();
-        delete cl;
+        cl->deleteLater();
     }
+    loggers.clear();
 
-    releaseMonPlayer();
+    mon_logger->stopStreaming();
+    mon_logger->deleteLater();
+    mon_logger = nullptr;
+
+
+    releasePlayer();
 
     if (file_deleter)
     {
@@ -270,12 +279,14 @@ void MainWindow::createPlayer()
         appLog::write(0, "create new mon_player");
         m_mon_player  =  new vlc::vlc_player;
         connect(m_mon_player, &vlc::vlc_player::player_event, this, &MainWindow::mon_player_events, Qt::ConnectionType::QueuedConnection);
+        m_mon_player->set_drawable(m_playerWindow.winId());
+
         for ( auto player_event : playerHandlers.keys() )
             m_mon_player->event_activate(player_event, true);
     }
 }
 
-void MainWindow::releaseMonPlayer()
+void MainWindow::releasePlayer()
 {
     qDebug() << Q_FUNC_INFO << " begin";
     if (m_mon_player)
@@ -301,7 +312,18 @@ void MainWindow::onCamSwitch(quint8 cam_num)
     QString str = tr("on_cam_switch(%1) sender %2").arg(int(cam_num)).arg(sobj ? sobj->objectName() : "none");
     qDebug() << str;
     appLog::write(6, str);
-    is_cam_online = false;
+
+    if (appState.camId != cam_num)
+    {
+        appState.camId = cam_num;
+        const cam_logger_vlc* clogger = loggers.at(cam_num);
+        mon_logger->createPlayer(&m_playerWindow);
+
+        mon_logger->set_mrl(clogger->get_mrl());
+        mon_logger->startStreaming(QString(), 0);
+
+    }
+    return;
 
     if ((appState.camId != cam_num || !m_mon_player || !m_mon_player->has_media()) && cam_num < this->loggers.count() )
     {
@@ -314,9 +336,10 @@ void MainWindow::onCamSwitch(quint8 cam_num)
         appConfig::setValue(tr("DEV/CAMERA"), appState.camId);
 
         vlc::vlc_media* media = new vlc::vlc_media;
+        media->add_option(":rtsp-timeout=5000");
         if (media->open_location(clogger->get_mrl().toLocal8Bit().constData()))
         {
-            media->add_option(":rtsp-timeout=5000");
+
             media = m_mon_player->set_media(media);
             if (media)
                 media->deleteLater();
@@ -340,6 +363,7 @@ void MainWindow::onPlayerStoped(vlc::vlc_player* player)
 void MainWindow::onPlayerPlaying(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
+
     QString str = tr("Mon player playing ");
     appLog::write(6, str);
     qDebug() << str;
@@ -385,31 +409,29 @@ void MainWindow::mon_player_events    (const libvlc_event_t event)
 void MainWindow::onPlayerResponseTimeout()
 {
     qDebug() << "Player not responce";
-    releaseMonPlayer();
-    show();
-    setFocus(Qt::FocusReason::PopupFocusReason);
-    onCamSwitch(appState.camId);
+
 }
 
 void MainWindow::start_cam_monitor()
 {
     appLog::write(2, "start_cam_monitor next must be start_cam_switch");
+    mon_logger = new cam_logger_vlc({-1, "", ""});
     int cam_id = std::max(appConfig::get_mon_camera(), 0);
     emit cam_switch(static_cast<quint8>(cam_id));
 }
 
 void MainWindow::start_loggers()
 {
-    if (m_vlog_root.isEmpty() && check_media_drive())
-    {
-        start_file_deleter();
-        int timeDuration = appConfig::get_time_duration();
+//    if (m_vlog_root.isEmpty() && check_media_drive())
+//    {
+//        start_file_deleter();
+//        int timeDuration = appConfig::get_time_duration();
 
-        foreach (cam_logger_vlc* cl, loggers)
-        {
-            cl->startStreaming(m_vlog_root, timeDuration);
-        }
-    }
+//        foreach (cam_logger_vlc* cl, loggers)
+//        {
+//            cl->startStreaming(m_vlog_root, timeDuration);
+//        }
+//    }
 }
 
 void MainWindow::init_gpio()

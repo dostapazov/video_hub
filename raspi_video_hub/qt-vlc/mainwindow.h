@@ -6,6 +6,7 @@
 #include <QSerialPort>
 #include <QTimer>
 #include <QMap>
+#include <QWindow>
 
 #include "ui_mainwindow.h"
 #include "filedeleterthread.h"
@@ -60,6 +61,8 @@ private:
 
     void initBlinker();
     void createPlayer();
+    void releasePlayer();
+
     void start_cam_monitor();
     void init_gpio  ();
     void init_libvlc();
@@ -73,7 +76,6 @@ private:
     QString whoami();
     bool check_media_drive();
     void handle_uart_packet(PCK_Header_t& header, int offset);
-    void releaseMonPlayer();
     void setSystemDateTime(QDateTime dt);
     void initPlayer();
 
@@ -89,11 +91,13 @@ private:
 
     PlayerHandlers playerHandlers;
     vlc::vlc_player*      m_mon_player   = Q_NULLPTR;
+
     static constexpr int PLAYER_RESPONSE_TIMEOUT = 10000;
     QTimer playerResponseTimer;
 
     QList<cam_params_t> readCameraList();
     QVector<cam_logger_vlc*>   loggers;
+    cam_logger_vlc* mon_logger = nullptr;
 
     QTimer blinker ;
     QTimer parser  ;
@@ -104,6 +108,7 @@ private:
     QSerialPort*       uart = Q_NULLPTR;
 
     FileDeleterThread* file_deleter = Q_NULLPTR;
+    QWidget   m_playerWindow;
 
     int             cam_time_synchro = -1;
     PCK_STATE_t     appState;
@@ -113,7 +118,6 @@ private:
     static void    check_need_update   ();
 
 
-    bool is_cam_online = false;
 
 };
 
