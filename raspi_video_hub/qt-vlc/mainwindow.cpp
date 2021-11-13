@@ -44,6 +44,9 @@ MainWindow::MainWindow(QWidget* parent) :
 
 {
     setupUi(this);
+    m_camWindow.setWindowFlags(Qt::WindowStaysOnTopHint );
+    //m_camWindow.setWindowFlags(Qt::X11BypassWindowManagerHint);
+
 
     appState = PCK_STATE_t {0xFF, 77, 777};
     connect(this, &MainWindow::cam_switch, this, &MainWindow::onCamSwitch, Qt::ConnectionType::QueuedConnection);
@@ -297,6 +300,8 @@ void MainWindow::onStartMon()
     QString str = QString("Play from  %1").arg(clogger->get_name());
     label->setText(str);
     m_camWindow.show();
+    m_camWindow.setFocus(Qt::FocusReason::MouseFocusReason);
+    FrameNo->setText("-");
 
 }
 
@@ -304,7 +309,8 @@ void MainWindow::onStopMon()
 {
 
     const cam_logger_vlc* clogger = loggers.at(appState.camId);
-    QString str = QString("Stop playing from  %1").arg(clogger->get_name());
+    QString str = QString("%1 lost connection").arg(clogger->get_name());
+    appLog::write(6, str);
     label->setText(str);
     m_camWindow.hide();
 }
@@ -312,8 +318,13 @@ void MainWindow::onStopMon()
 void MainWindow::onMonitorError()
 {
     const cam_logger_vlc* clogger = loggers.at(appState.camId);
-    QString str = QString("Camera %1 not response monWidget ").arg(clogger->get_name()).arg(m_camWindow.isVisible() ? "Visible " : "Hide");
+
+    bool monWidgetVisible = m_camWindow.isVisible();
+    QString str = QString("Camera %1 not response monWidget %2 ").arg(clogger->get_name()).arg( monWidgetVisible ? "Visible " : "Hide");
     qDebug() << str;
+    appLog::write(6, str);
+    if (monWidgetVisible)
+        m_camWindow.hide();
     cam_monitor->startMonitoring(&m_camWindow, clogger->get_mrl());
 }
 
