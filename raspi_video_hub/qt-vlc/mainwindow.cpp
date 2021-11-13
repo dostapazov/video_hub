@@ -278,9 +278,15 @@ void MainWindow::start_cam_monitor()
     cam_monitor = new cam_logger_vlc({-1, "", ""});
     connect(cam_monitor, &cam_logger_vlc::onStartMon, this, &MainWindow::onStartMon);
     connect(cam_monitor, &cam_logger_vlc::onStopMon, this, &MainWindow::onStopMon);
+    connect(cam_monitor, &cam_logger_vlc::framesChanged, this, &MainWindow::onFramesChanged);
 
     int cam_id = std::max(appConfig::get_mon_camera(), 0);
     emit cam_switch(static_cast<quint8>(cam_id));
+}
+
+void MainWindow::onFramesChanged(int frames)
+{
+    this->FrameNo->setText(QString::number(frames));
 }
 
 

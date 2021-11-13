@@ -14,14 +14,13 @@
 #include "applog.h"
 
 
-
-
 cam_logger_vlc::cam_logger_vlc(const cam_params_t& aParams, QObject* parent )
     : QObject(parent)
 {
     m_params = aParams;
     cutTimer.setSingleShot(true);
     connect(&cutTimer, &QTimer::timeout, this, &cam_logger_vlc::nextFile, Qt::ConnectionType::QueuedConnection);
+    connect(&playWatchdog, &QTimer::timeout, this, &cam_logger_vlc::playChecker, Qt::ConnectionType::QueuedConnection);
 
     initPlayerHandlers();
 }
@@ -100,7 +99,7 @@ bool cam_logger_vlc::startMonitoring(QWidget* widget, const QString& mrl)
     m_player->play();
     if (media)
         media->deleteLater();
-
+    startPlayWatchDog();
     return true;
 }
 
@@ -207,8 +206,6 @@ void cam_logger_vlc::initPlayerHandlers()
     namespace p = std::placeholders;
     playerHandlers[libvlc_MediaPlayerPlaying] = std::bind(&cam_logger_vlc::OnPlayerPlaying, this, p::_1);
     playerHandlers[libvlc_MediaPlayerStopped] = std::bind(&cam_logger_vlc::OnPlayerStopped, this, p::_1);
-    playerHandlers[libvlc_MediaPlayerEncounteredError] = std::bind(&cam_logger_vlc::OnPlayerError, this, p::_1);
-    playerHandlers[libvlc_MediaPlayerEndReached] = std::bind(&cam_logger_vlc::OnPlayerEndReached, this, p::_1);
 }
 
 void cam_logger_vlc::OnPlayerStopped(vlc::vlc_player* player)
@@ -245,31 +242,12 @@ void cam_logger_vlc::OnPlayerPlaying(vlc::vlc_player* player)
 
 }
 
-void cam_logger_vlc::OnPlayerError(vlc::vlc_player* player)
-{
-    Q_UNUSED(player)
-    QString str = tr("%1 player stopped, errors encountered %2").arg(get_name()).arg(m_player->get_last_errors().join(", "));
-    appLog::write(0, str);
-    qDebug() << str;
-
-}
 
 void   cam_logger_vlc::player_events(const libvlc_event_t event)
 {
     player_event_handler_t handler = playerHandlers.value(static_cast<libvlc_event_e>(event.type));
     if (handler)
         handler(m_player);
-}
-
-
-
-void cam_logger_vlc::OnPlayerEndReached(vlc::vlc_player* player)
-{
-    Q_UNUSED(player)
-    QString str = tr("%1 player end reached").arg(get_name());
-    appLog::write(0, str);
-    qDebug() << str;
-    //create_media();
 }
 
 
@@ -308,6 +286,36 @@ void      cam_logger_vlc::releasePlayer()
     }
 
 }
+
+void cam_logger_vlc::playChecker()
+{
+    libvlc_media_stats_t stats;
+    m_player->get_media_stats(stats);
+    if (m_displayedPictures != stats.i_displayed_pictures)
+    {
+        m_displayedPictures = stats.i_displayed_pictures;
+        emit framesChanged(m_displayedPictures);
+        playWatchdog.start();
+    }
+    if (isStreaming())
+    {
+
+    }
+    else
+    {
+        emit onError();
+    }
+
+}
+
+void cam_logger_vlc::startPlayWatchDog()
+{
+    m_displayedPictures = 0;
+    playWatchdog.setSingleShot(true);
+    playWatchdog.setInterval(5000);
+    playWatchdog.start();
+}
+
 
 bool cam_logger_vlc::togglePlaying()
 {

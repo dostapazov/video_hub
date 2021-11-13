@@ -54,11 +54,15 @@ public:
 signals :
     void onStartMon();
     void onStopMon();
+    void onError();
+    void framesChanged(int frames);
+
 
 private Q_SLOTS:
 
     void     player_events(const libvlc_event_t event);
     void     nextFile();
+    void     playChecker();
 
 private:
 
@@ -70,9 +74,7 @@ private:
     void initPlayerHandlers();
     void OnPlayerStopped(vlc::vlc_player* player);
     void OnPlayerPlaying(vlc::vlc_player* player);
-    void OnPlayerError(vlc::vlc_player* player);
-    //void OnPlayerPosition(vlc::vlc_player* player);
-    void OnPlayerEndReached(vlc::vlc_player* player);
+    void startPlayWatchDog();
 
     int       get_time_interval(const QDateTime& dtm);
     QString   get_file_name    (const QDateTime& dtm);
@@ -86,12 +88,15 @@ private:
     cam_params_t      m_params;
 
     QTimer            cutTimer;
+    QTimer            playWatchdog;
 
     QString           mStorageFolder;
     int               m_file_timelen    = 0;
     int               m_network_caching = 300;
     int               m_time_duration = 0;
-    int               m_check_play_counter = 0;
+
+    int               m_displayedPictures  = 0;
+
 
     vlc::vlc_player*  m_player     = nullptr;
 };

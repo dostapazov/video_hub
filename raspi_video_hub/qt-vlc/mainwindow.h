@@ -46,6 +46,7 @@ private slots:
     void on_blink();
     void onCamSwitch(quint8 camNum);
     void on_bTestUpdate_clicked();
+    void onFramesChanged(int frames);
 
 private:
     void closeEvent(QCloseEvent* event) override;
