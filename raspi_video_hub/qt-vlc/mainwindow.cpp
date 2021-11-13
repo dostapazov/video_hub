@@ -72,7 +72,6 @@ MainWindow::~MainWindow()
 void MainWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
-    m_playerWindow.show();
     start_cam_monitor();
 }
 
@@ -176,14 +175,14 @@ void MainWindow::deinit_all()
 
     foreach (cam_logger_vlc* cl, this->loggers)
     {
-        cl->stopStreaming();
+        cl->stop();
         cl->deleteLater();
     }
     loggers.clear();
 
-    mon_logger->stopStreaming();
-    mon_logger->deleteLater();
-    mon_logger = nullptr;
+    cam_monitor->stop();
+    cam_monitor->deleteLater();
+    cam_monitor = nullptr;
 
 
     if (file_deleter)
@@ -253,73 +252,54 @@ void MainWindow::on_blink()
 void MainWindow::onCamSwitch(quint8 cam_num)
 {
     QObject* sobj = sender();
-    qDebug() << Q_FUNC_INFO << cam_num;
-    QString str = tr("on_cam_switch(%1) sender %2").arg(int(cam_num)).arg(sobj ? sobj->objectName() : "none");
-    qDebug() << str;
-    appLog::write(6, str);
 
     if (appState.camId != cam_num)
     {
 
         appState.camId = cam_num;
         const cam_logger_vlc* clogger = loggers.at(cam_num);
-        mon_logger->createPlayer(&m_playerWindow);
-        mon_logger->set_mrl(clogger->get_mrl());
-        mon_logger->startStreaming(QString(), 0);
-        QString str = QString("Wait data from %1").arg(clogger->get_name());
+        QString str = tr("Monitor switch to camera (%1) %2").arg(int(cam_num)).arg(clogger->get_mrl());
+        qDebug() << str;
+        appLog::write(6, str);
+
+
+        cam_monitor->startMonitoring(&m_camWindow, clogger->get_mrl());
+        str = QString("Wait data from %1").arg(clogger->get_name());
         label->setText(str);
     }
     return;
 }
 
 
-void MainWindow::initEventHandlers()
-{
-    eventHandlers[libvlc_MediaPlayerPlaying] = std::bind( &MainWindow::onPlayStart, this, std::placeholders::_1);
-    eventHandlers[libvlc_MediaPlayerStopped] = std::bind( &MainWindow::onPlayStop, this, std::placeholders::_1);
-    connect(mon_logger, &cam_logger_vlc::on_player_events, this, &MainWindow::mon_player_events);
-
-}
 
 void MainWindow::start_cam_monitor()
 {
     appLog::write(2, "start_cam_monitor next must be start_cam_switch");
-    mon_logger = new cam_logger_vlc({-1, "", ""});
-    initEventHandlers();
+    cam_monitor = new cam_logger_vlc({-1, "", ""});
+    connect(cam_monitor, &cam_logger_vlc::onStartMon, this, &MainWindow::onStartMon);
+    connect(cam_monitor, &cam_logger_vlc::onStopMon, this, &MainWindow::onStopMon);
+
     int cam_id = std::max(appConfig::get_mon_camera(), 0);
     emit cam_switch(static_cast<quint8>(cam_id));
 }
 
-void    MainWindow::mon_player_events(const libvlc_event_t event)
-{
-    cam_logger_vlc::player_event_handler_t  handler = eventHandlers[static_cast<libvlc_event_e>(event.type)];
-    if (handler)
-        handler(mon_logger->getPlayer());
-}
 
-void MainWindow::onPlayStart(vlc::vlc_player* player)
+void MainWindow::onStartMon()
 {
-    Q_UNUSED(player)
     const cam_logger_vlc* clogger = loggers.at(appState.camId);
     QString str = QString("Play from  %1").arg(clogger->get_name());
     label->setText(str);
+    m_camWindow.show();
 
 }
 
-void MainWindow::onPlayStop(vlc::vlc_player* player)
+void MainWindow::onStopMon()
 {
-    Q_UNUSED(player)
+
     const cam_logger_vlc* clogger = loggers.at(appState.camId);
     QString str = QString("Stop playing from  %1").arg(clogger->get_name());
     label->setText(str);
-}
-
-void MainWindow::onPlayError(vlc::vlc_player* player)
-{
-    Q_UNUSED(player)
-    const cam_logger_vlc* clogger = loggers.at(appState.camId);
-    QString str = QString("Error enco %1").arg(clogger->get_name());
-    label->setText(str);
+    m_camWindow.hide();
 }
 
 
@@ -434,11 +414,10 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
 
         break;
         case Qt::Key_Space:
-            break;
+            cam_monitor->togglePlaying();
         default:
             break;
     }
 }
 #endif
-
 

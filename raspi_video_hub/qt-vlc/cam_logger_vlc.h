@@ -44,16 +44,16 @@ public:
     const QString  get_name  () const   {return m_params.name;}
     const QString  get_mrl   () const   {return m_params.mrl;}
     void set_mrl(const QString& mrl);
-    void startStreaming(const QString folder, int timeDuration);
-    void stopStreaming();
-    vlc::vlc_player* createPlayer(QWidget* drawable = nullptr);
-    vlc::vlc_player* getPlayer() {return  m_player;}
+    bool startMonitoring(QWidget* widget, const QString& mrl);
+    bool startStreaming(const QString folder, int timeDuration);
+    void stop();
+    bool isStreaming() { return m_time_duration;}
+    bool togglePlaying();
 
-    using player_event_handler_t = std::function<void(vlc::vlc_player*)>;
-    using PlayerEventHandlers = QMap<libvlc_event_e, player_event_handler_t>;
 
 signals :
-    void on_player_events (const libvlc_event_t event);
+    void onStartMon();
+    void onStopMon();
 
 private Q_SLOTS:
 
@@ -62,7 +62,11 @@ private Q_SLOTS:
 
 private:
 
+    using player_event_handler_t = std::function<void(vlc::vlc_player*)>;
+    using PlayerEventHandlers = QMap<libvlc_event_e, player_event_handler_t>;
     PlayerEventHandlers playerHandlers;
+    vlc::vlc_player* createPlayer();
+
     void initPlayerHandlers();
     void OnPlayerStopped(vlc::vlc_player* player);
     void OnPlayerPlaying(vlc::vlc_player* player);
@@ -86,7 +90,7 @@ private:
     QString           mStorageFolder;
     int               m_file_timelen    = 0;
     int               m_network_caching = 300;
-    int               m_time_duration = 60; // Duration in minutes
+    int               m_time_duration = 0;
     int               m_check_play_counter = 0;
 
     vlc::vlc_player*  m_player     = nullptr;

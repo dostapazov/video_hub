@@ -45,8 +45,6 @@ private slots:
 
     void on_blink();
     void onCamSwitch(quint8 camNum);
-    void mon_player_events    (const libvlc_event_t event);
-
     void on_bTestUpdate_clicked();
 
 private:
@@ -83,14 +81,9 @@ private:
     QList<cam_params_t> readCameraList();
 
     QVector<cam_logger_vlc*>   loggers;
-    cam_logger_vlc* mon_logger = nullptr;
-    cam_logger_vlc::PlayerEventHandlers eventHandlers;
-    void initEventHandlers();
-    void onPlayStart(vlc::vlc_player* player);
-    void onPlayStop(vlc::vlc_player* player);
-    void onPlayError(vlc::vlc_player* player);
-
-
+    cam_logger_vlc* cam_monitor = nullptr;
+    void onStartMon();
+    void onStopMon();
 
     QTimer blinker ;
     QTimer parser  ;
@@ -101,7 +94,7 @@ private:
     QSerialPort*       uart = Q_NULLPTR;
 
     FileDeleterThread* file_deleter = Q_NULLPTR;
-    QWidget   m_playerWindow;
+    QWidget   m_camWindow;
 
     int             cam_time_synchro = -1;
     PCK_STATE_t     appState;

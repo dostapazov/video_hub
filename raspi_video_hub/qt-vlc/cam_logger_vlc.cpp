@@ -28,7 +28,7 @@ cam_logger_vlc::cam_logger_vlc(const cam_params_t& aParams, QObject* parent )
 
 cam_logger_vlc::~cam_logger_vlc()
 {
-    stopStreaming();
+    stop();
     QThread::msleep(200);
 }
 
@@ -81,15 +81,41 @@ QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
 }
 
 
-
-void     cam_logger_vlc::startStreaming(const QString folder, int timeDuration)
+bool cam_logger_vlc::startMonitoring(QWidget* widget, const QString& mrl)
 {
+
+    if (!widget || mrl.isEmpty())
+        return false;
+
+    if (!m_player)
+    {
+        createPlayer();
+        m_player->set_drawable(widget->winId());
+    }
+
+
+    m_params.mrl = mrl;
+    vlc::vlc_media* media = m_player->set_media(create_media());
+
+    m_player->play();
+    if (media)
+        media->deleteLater();
+
+    return true;
+}
+
+bool cam_logger_vlc::startStreaming(const QString folder, int timeDuration)
+{
+    if (folder.isEmpty() || !timeDuration)
+        return false;
+
     mStorageFolder = folder;
     m_time_duration = timeDuration ;
     nextFile();
+    return true;
 }
 
-void     cam_logger_vlc::stopStreaming  ()
+void     cam_logger_vlc::stop  ()
 {
     releasePlayer();
 }
@@ -188,21 +214,34 @@ void cam_logger_vlc::initPlayerHandlers()
 void cam_logger_vlc::OnPlayerStopped(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
-    QString str = tr("%1 player stopped,replace media").arg(get_name());
-    appLog::write(0, str);
-    qDebug() << str;
+    if (isStreaming())
+    {
+        QString str = tr("%1 player stopped").arg(get_name());
+        appLog::write(0, str);
+        qDebug() << str;
+
+    }
+    else
+    {
+        emit onStopMon();
+    }
 }
 
 void cam_logger_vlc::OnPlayerPlaying(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
-    QString str = tr("%1 player playing").arg(get_name());
-    appLog::write(0, str);
-    if (m_file_timelen)
+    if (isStreaming())
     {
+        QString str = tr("%1 player playing").arg(get_name());
+        appLog::write(0, str);
         cutTimer.setInterval(m_file_timelen);
         cutTimer.start();
     }
+    else
+    {
+        emit onStartMon();
+    }
+
 
 }
 
@@ -230,19 +269,16 @@ void cam_logger_vlc::OnPlayerEndReached(vlc::vlc_player* player)
     QString str = tr("%1 player end reached").arg(get_name());
     appLog::write(0, str);
     qDebug() << str;
-    create_media();
+    //create_media();
 }
 
 
-vlc::vlc_player*   cam_logger_vlc::createPlayer(QWidget* drawable)
+vlc::vlc_player*   cam_logger_vlc::createPlayer()
 {
     if (!m_player)
     {
         m_player = new vlc::vlc_player;
         connect(m_player, &vlc::vlc_player::player_event, this, &cam_logger_vlc::player_events, Qt::ConnectionType::QueuedConnection);
-        connect(m_player, &vlc::vlc_player::player_event, this, &cam_logger_vlc::on_player_events, Qt::ConnectionType::QueuedConnection);
-        if (drawable)
-            m_player->set_drawable(drawable->winId());
 
         QList<libvlc_event_e> keys = playerHandlers.keys();
         for ( libvlc_event_e&   event : keys )
@@ -273,7 +309,12 @@ void      cam_logger_vlc::releasePlayer()
 
 }
 
-//    Пересоздать player при обрыве связи
-//    удалять файлы нулевой длины
-
+bool cam_logger_vlc::togglePlaying()
+{
+    if (m_player)
+    {
+        return m_player->is_playing() ? m_player->stop() : m_player->play();
+    }
+    return false;
+}
 
