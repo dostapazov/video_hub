@@ -6,6 +6,7 @@
 #include <QSerialPort>
 #include <QTimer>
 #include <QMap>
+#include <QWindow>
 
 #include "ui_mainwindow.h"
 #include "filedeleterthread.h"
@@ -43,12 +44,10 @@ private slots:
     void onParse();
 
     void on_blink();
-    void onCamSwitch(quint8 camNum);
-    void mon_player_events    (const libvlc_event_t event);
-    void onPlayerResponseTimeout();
+    void onCamSwitch(quint8 camId);
     void on_bTestUpdate_clicked();
-
-
+    void onFramesChanged(int frames);
+    void onMonitorError();
 
 private:
     void closeEvent(QCloseEvent* event) override;
@@ -59,7 +58,7 @@ private:
 
 
     void initBlinker();
-    void createPlayer();
+
     void start_cam_monitor();
     void init_gpio  ();
     void init_libvlc();
@@ -73,27 +72,20 @@ private:
     QString whoami();
     bool check_media_drive();
     void handle_uart_packet(PCK_Header_t& header, int offset);
-    void releaseMonPlayer();
     void setSystemDateTime(QDateTime dt);
-    void initPlayer();
 
-    void onPlayerStoped(vlc::vlc_player* player);
-    void onPlayerPlaying(vlc::vlc_player* player);
-    void onPlayerError(vlc::vlc_player* player);
-    void onPlayerPoschanging(vlc::vlc_player* player);
-
-
-    using  player_events_handler_t = std::function<void(vlc::vlc_player*)>;
-    using  PlayerHandlers = QMap<libvlc_event_e, player_events_handler_t>;
     QString m_vlog_root  ;
 
-    PlayerHandlers playerHandlers;
-    vlc::vlc_player*      m_mon_player   = Q_NULLPTR;
+
     static constexpr int PLAYER_RESPONSE_TIMEOUT = 10000;
     QTimer playerResponseTimer;
 
     QList<cam_params_t> readCameraList();
+
     QVector<cam_logger_vlc*>   loggers;
+    cam_logger_vlc* cam_monitor = nullptr;
+    void onStartMon();
+    void onStopMon();
 
     QTimer blinker ;
     QTimer parser  ;
@@ -104,6 +96,7 @@ private:
     QSerialPort*       uart = Q_NULLPTR;
 
     FileDeleterThread* file_deleter = Q_NULLPTR;
+    QWidget   m_camWindow;
 
     int             cam_time_synchro = -1;
     PCK_STATE_t     appState;
@@ -112,9 +105,15 @@ private:
     static QString get_update_file_name();
     static void    check_need_update   ();
 
-
-    bool is_cam_online = false;
-
 };
+
+#ifndef DESKTOP_DEBUG_BUILD
+    #include <wiringPi.h>
+#else
+    #define digitalRead(x)
+    #define digitalWrite(x,y)
+
+#endif
+
 
 #endif // MAINWINDOW_H

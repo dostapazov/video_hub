@@ -14,13 +14,6 @@
 #include <signal.h>
 #include <unistd.h>
 
-#ifndef DESKTOP_DEBUG_BUILD
-    #include <wiringPi.h>
-#else
-    #define digitalRead(x)
-    #define digitalWrite(x,y)
-
-#endif
 
 const char* const MainWindow::vlcArgs[] =
 {
@@ -48,8 +41,12 @@ void MainWindow::initBlinker()
 
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent)
+
 {
     setupUi(this);
+    m_camWindow.setWindowFlags(Qt::WindowStaysOnTopHint );
+    //m_camWindow.setWindowFlags(Qt::X11BypassWindowManagerHint);
+
 
     appState = PCK_STATE_t {0xFF, 77, 777};
     connect(this, &MainWindow::cam_switch, this, &MainWindow::onCamSwitch, Qt::ConnectionType::QueuedConnection);
@@ -58,11 +55,10 @@ MainWindow::MainWindow(QWidget* parent) :
 
     blinker.start    ();
     init_libvlc      ();
-    initPlayer ();
     init_uart        ();
     load_config      ();
-    start_cam_monitor();
     start_loggers();
+
 #if defined (DESKTOP_DEBUG_BUILD)
     show();
 #else
@@ -79,6 +75,7 @@ MainWindow::~MainWindow()
 void MainWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
+    start_cam_monitor();
 }
 
 void MainWindow::init_libvlc()
@@ -181,11 +178,15 @@ void MainWindow::deinit_all()
 
     foreach (cam_logger_vlc* cl, this->loggers)
     {
-        cl->stopStreaming();
-        delete cl;
+        cl->stop();
+        cl->deleteLater();
     }
+    loggers.clear();
 
-    releaseMonPlayer();
+    cam_monitor->stop();
+    cam_monitor->deleteLater();
+    cam_monitor = nullptr;
+
 
     if (file_deleter)
     {
@@ -251,165 +252,94 @@ void MainWindow::on_blink()
     blinker.start();
 }
 
-
-void MainWindow::initPlayer()
+void MainWindow::onCamSwitch(quint8 camId)
 {
-    playerHandlers[libvlc_MediaPlayerStopped]  = std::bind(&MainWindow::onPlayerStoped, this, std::placeholders::_1);
-    playerHandlers[libvlc_MediaPlayerPlaying]  = std::bind(&MainWindow::onPlayerPlaying, this, std::placeholders::_1);
-    playerHandlers[libvlc_MediaPlayerEncounteredError] = std::bind(&MainWindow::onPlayerError, this, std::placeholders::_1);;
-    playerHandlers[libvlc_MediaPlayerPositionChanged]  = std::bind(&MainWindow::onPlayerPoschanging, this, std::placeholders::_1);;
-    connect(&playerResponseTimer, &QTimer::timeout, this, &MainWindow::onPlayerResponseTimeout);
-    playerResponseTimer.setInterval(PLAYER_RESPONSE_TIMEOUT);
-}
+    //QObject* sobj = sender();
 
-
-void MainWindow::createPlayer()
-{
-    if (!m_mon_player)
+    if (appState.camId != camId)
     {
-        appLog::write(0, "create new mon_player");
-        m_mon_player  =  new vlc::vlc_player;
-        connect(m_mon_player, &vlc::vlc_player::player_event, this, &MainWindow::mon_player_events, Qt::ConnectionType::QueuedConnection);
-        for ( auto player_event : playerHandlers.keys() )
-            m_mon_player->event_activate(player_event, true);
+
+        appState.camId = camId;
+        appConfig::set_mon_camera(camId);
+        const cam_logger_vlc* clogger = loggers.at(camId);
+        QString str = tr("Monitor switch to camera (%1) %2").arg(int(camId)).arg(clogger->get_mrl());
+        qDebug() << str;
+        appLog::write(6, str);
+
+        cam_monitor->startMonitoring(&m_camWindow, clogger->get_mrl());
+        str = QString("Wait data from %1").arg(clogger->get_name());
+        label->setText(str);
     }
-}
-
-void MainWindow::releaseMonPlayer()
-{
-    qDebug() << Q_FUNC_INFO << " begin";
-    if (m_mon_player)
-    {
-        m_mon_player->disconnect();
-        m_mon_player->stop();
-
-        vlc::vlc_media* media = m_mon_player->set_media(nullptr);
-        if (media)
-            media->deleteLater();
-        m_mon_player->deleteLater();
-        m_mon_player = nullptr;
-    }
-
-    qDebug() << Q_FUNC_INFO << " end";
+    return;
 }
 
 
-void MainWindow::onCamSwitch(quint8 cam_num)
-{
-    QObject* sobj = sender();
-    qDebug() << Q_FUNC_INFO << cam_num;
-    QString str = tr("on_cam_switch(%1) sender %2").arg(int(cam_num)).arg(sobj ? sobj->objectName() : "none");
-    qDebug() << str;
-    appLog::write(6, str);
-    is_cam_online = false;
-
-    if ((appState.camId != cam_num || !m_mon_player || !m_mon_player->has_media()) && cam_num < this->loggers.count() )
-    {
-        createPlayer();
-        //show();
-        const cam_logger_vlc* clogger = loggers.at(cam_num);
-        label->setText(tr("wait data from camera %1 ").arg(clogger->get_name()));
-
-        appState.camId = cam_num;
-        appConfig::setValue(tr("DEV/CAMERA"), appState.camId);
-
-        vlc::vlc_media* media = new vlc::vlc_media;
-        if (media->open_location(clogger->get_mrl().toLocal8Bit().constData()))
-        {
-            media->add_option(":rtsp-timeout=5000");
-            media = m_mon_player->set_media(media);
-            if (media)
-                media->deleteLater();
-            m_mon_player->play();
-            playerResponseTimer.start();
-        }
-    }
-}
-
-
-void MainWindow::onPlayerStoped(vlc::vlc_player* player)
-{
-    Q_UNUSED(player)
-    QString str = tr("Mon player stopped ");
-    appLog::write(6, str);
-    qDebug() << str;
-    const cam_logger_vlc* clogger = loggers.at(appState.camId);
-    label->setText(tr("%1 lost connection ").arg(clogger->get_name()));
-}
-
-void MainWindow::onPlayerPlaying(vlc::vlc_player* player)
-{
-    Q_UNUSED(player)
-    QString str = tr("Mon player playing ");
-    appLog::write(6, str);
-    qDebug() << str;
-    const cam_logger_vlc* clogger = loggers.at(appState.camId);
-    label->setText(tr("%1 working ").arg(clogger->get_name()));
-#if !defined (DESKTOP_DEBUG_BUILD)
-    m_mon_player->set_fullscreen(true);
-#endif
-    //hide();
-
-}
-
-void MainWindow::onPlayerError(vlc::vlc_player* player)
-{
-    Q_UNUSED(player)
-    QString str = tr("Mon player errors %1").arg(player->get_last_errors().join(", "));
-    appLog::write(0, str);
-    if (m_mon_player->has_media())
-        delete m_mon_player->set_media(nullptr);
-}
-
-void MainWindow::onPlayerPoschanging(vlc::vlc_player* player)
-{
-    Q_UNUSED(player)
-    //qDebug() << "Media player position changed " << QTime::currentTime().toString("hh:mm:ss.zzz");
-    playerResponseTimer.stop();
-    playerResponseTimer.start();
-}
-
-
-void MainWindow::mon_player_events    (const libvlc_event_t event)
-{
-    vlc::vlc_player* player = const_cast<vlc::vlc_player*>(dynamic_cast<vlc::vlc_player*>(sender()));
-    if (player)
-    {
-        player_events_handler_t handler = playerHandlers.value(static_cast<libvlc_event_e>(event.type));
-        if (handler)
-            handler(player);
-    }
-}
-
-
-void MainWindow::onPlayerResponseTimeout()
-{
-    qDebug() << "Player not responce";
-    releaseMonPlayer();
-    show();
-    setFocus(Qt::FocusReason::PopupFocusReason);
-    onCamSwitch(appState.camId);
-}
 
 void MainWindow::start_cam_monitor()
 {
     appLog::write(2, "start_cam_monitor next must be start_cam_switch");
+    cam_monitor = new cam_logger_vlc({-1, "", ""});
+    connect(cam_monitor, &cam_logger_vlc::onStartMon, this, &MainWindow::onStartMon);
+    connect(cam_monitor, &cam_logger_vlc::onStopMon, this, &MainWindow::onStopMon);
+    connect(cam_monitor, &cam_logger_vlc::onError, this, &MainWindow::onMonitorError);
+    connect(cam_monitor, &cam_logger_vlc::framesChanged, this, &MainWindow::onFramesChanged);
+
     int cam_id = std::max(appConfig::get_mon_camera(), 0);
     emit cam_switch(static_cast<quint8>(cam_id));
 }
 
+void MainWindow::onFramesChanged(int frames)
+{
+    this->FrameNo->setText(QString::number(frames));
+}
+
+
+void MainWindow::onStartMon()
+{
+    const cam_logger_vlc* clogger = loggers.at(appState.camId);
+    QString str = QString("Play from  %1").arg(clogger->get_name());
+    label->setText(str);
+    m_camWindow.show();
+    m_camWindow.setFocus(Qt::FocusReason::MouseFocusReason);
+    FrameNo->setText("-");
+
+}
+
+void MainWindow::onStopMon()
+{
+
+    const cam_logger_vlc* clogger = loggers.at(appState.camId);
+    QString str = QString("%1 lost connection").arg(clogger->get_name());
+    appLog::write(6, str);
+    label->setText(str);
+    m_camWindow.hide();
+}
+
+void MainWindow::onMonitorError()
+{
+    const cam_logger_vlc* clogger = loggers.at(appState.camId);
+
+    bool monWidgetVisible = m_camWindow.isVisible();
+    QString str = QString("Camera %1 not response monWidget %2 ").arg(clogger->get_name()).arg( monWidgetVisible ? "Visible " : "Hide");
+    qDebug() << str;
+    appLog::write(6, str);
+    if (monWidgetVisible)
+        m_camWindow.hide();
+    cam_monitor->startMonitoring(&m_camWindow, clogger->get_mrl());
+}
+
 void MainWindow::start_loggers()
 {
-    if (m_vlog_root.isEmpty() && check_media_drive())
-    {
-        start_file_deleter();
-        int timeDuration = appConfig::get_time_duration();
+//    if (m_vlog_root.isEmpty() && check_media_drive())
+//    {
+//        start_file_deleter();
+//        int timeDuration = appConfig::get_time_duration();
 
-        foreach (cam_logger_vlc* cl, loggers)
-        {
-            cl->startStreaming(m_vlog_root, timeDuration);
-        }
-    }
+//        foreach (cam_logger_vlc* cl, loggers)
+//        {
+//            cl->startStreaming(m_vlog_root, timeDuration);
+//        }
+//    }
 }
 
 void MainWindow::init_gpio()
@@ -433,63 +363,6 @@ void MainWindow::init_gpio()
 
 }
 
-void MainWindow::readCPUtemper()
-{
-
-    FILE* thermal;
-    int n = 0;
-#ifdef Q_OS_LINUX
-    const char* temper_file_name = "/sys/class/thermal/thermal_zone0/temp";
-#else
-    const char* temper_file_name = "d:/temp.txt";
-#endif
-
-    int onTemper  = appConfig::value("FAN/StartTemper").toInt() ;
-    int offTemper = appConfig::value("FAN/StopTemper" ).toInt() ;
-    onTemper  = 1000 * qMax(onTemper, 45);
-    offTemper = 1000 * qMax(offTemper, 40);
-
-    thermal = fopen(temper_file_name, "r");
-
-    if (thermal)
-    {
-        int rv = 0;
-        n = fscanf(thermal, "%d", &rv);
-        fclose(thermal);
-        appState.temper = static_cast<quint16>(rv);
-
-    }
-
-    if ( !thermal || !n )
-    {
-        appState.temper = static_cast<quint16>(onTemper + 1);
-        if (!appState.fanState) // Вентилятор выключен пишем в лог и включаем принудительно
-            appLog::write(0, "error get temperature from mon file. switch fan ON");
-    }
-
-    //qDebug("current temp %u  fan state %d onTemp %d offTemp %d ",(unsigned int)appState.temper, (int)appState.fanState,onTemper,offTemper);
-    bool fan_state_changed = false;
-    if ((appState.temper >= onTemper) && (appState.fanState != 1))
-    {
-        appState.fanState = 1;
-        fan_state_changed = true;
-        QString str = tr("Temper  %1 > %2, starting fan").arg(appState.temper).arg(onTemper);
-        appLog::write(6, str);
-    }
-
-    if ((appState.temper <= offTemper) && (appState.fanState != 0))
-    {
-        appState.fanState = 0;
-        fan_state_changed = true;
-        QString str = tr("Temper  %1 < %2, stopping fan").arg(appState.temper).arg(onTemper);
-        appLog::write(6, str);
-    }
-
-    if (fan_state_changed)
-    {
-        digitalWrite(PIN_FAN, appState.fanState);
-    }
-}
 
 void MainWindow::on_bTestUpdate_clicked()
 {
@@ -566,12 +439,10 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
 
         break;
         case Qt::Key_Space:
-            m_mon_player->is_playing() ?  m_mon_player->stop() : m_mon_player->play();
-            break;
+            cam_monitor->togglePlaying();
         default:
             break;
     }
 }
 #endif
-
 

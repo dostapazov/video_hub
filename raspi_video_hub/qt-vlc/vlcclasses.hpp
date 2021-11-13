@@ -68,7 +68,6 @@ public :
     bool get_stats(libvlc_media_stats_t* p_stats );
     libvlc_time_t get_duration();
     bool          event_activate(libvlc_event_e event_type, bool activate );
-    void          events_activate_all(bool active);
     void*         user_data();
     void          set_user_data(void* data);
 
@@ -92,17 +91,17 @@ public:
     vlc_media* set_media(vlc_media* media);
     bool     hasMedia() {return  m_current_media;};
     bool     event_activate(libvlc_event_e event_type, bool active);
-    void     events_activate_all(bool active);
     bool     is_playing();
     bool     play();
     bool     pause();
     bool     stop(int timeout = 50);
-
     bool     has_media() {return m_current_media ? true : false;}
+    bool     open_mrl(const QString& mrl);
     bool     is_fullscreen();
     void     set_fullscreen(bool full);
     QStringList    get_last_errors();
     libvlc_state_t get_state ();
+    libvlc_media_stats_t get_media_stats();
 
 #ifdef __linux__
     void     set_drawable(uint32_t x11drawable);
@@ -120,8 +119,8 @@ private:
     libvlc_media_player_t* m_player = nullptr;
     vlc_media*             m_current_media   = nullptr;
     QStringList            last_errors;
-    void           handle_event  (const libvlc_event_t& event)  ;
-    static void           event_callback( const libvlc_event_t*, void* user_data);
+    void                   handle_event  (const libvlc_event_t& event)  ;
+    static void            event_callback( const libvlc_event_t*, void* user_data);
 };
 
 // inlines
@@ -211,6 +210,16 @@ inline QStringList vlc_player::get_last_errors()
 inline libvlc_state_t vlc_player::get_state ()
 {
     return m_player ? libvlc_media_player_get_state(m_player) : libvlc_Error;
+}
+
+inline libvlc_media_stats_t vlc_player::get_media_stats()
+{
+    libvlc_media_stats_t stats;
+    if (hasMedia())
+        m_current_media->get_stats(&stats);
+    else
+        memset(&stats, 0, sizeof(stats));
+    return stats;
 }
 
 #ifdef __linux__

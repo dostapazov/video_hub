@@ -135,36 +135,6 @@ bool    vlc_media::event_activate(libvlc_event_e event_type, bool active )
     return false;
 }
 
-void    vlc_media::events_activate_all(bool active)
-{
-    if (m_media )
-    {
-        libvlc_event_manager_t* mng = libvlc_media_event_manager(m_media);
-        if (mng)
-        {
-            if (active)
-            {
-                libvlc_event_attach(mng, libvlc_MediaMetaChanged, event_callback, this);
-                libvlc_event_attach(mng, libvlc_MediaSubItemAdded, event_callback, this);
-                libvlc_event_attach(mng, libvlc_MediaDurationChanged, event_callback, this);
-                libvlc_event_attach(mng, libvlc_MediaParsedChanged, event_callback, this);
-                libvlc_event_attach(mng, libvlc_MediaFreed, event_callback, this);
-                libvlc_event_attach(mng, libvlc_MediaStateChanged, event_callback, this);
-                libvlc_event_attach(mng, libvlc_MediaSubItemTreeAdded, event_callback, this);
-            }
-            else
-            {
-                libvlc_event_detach(mng, libvlc_MediaMetaChanged, event_callback, this);
-                libvlc_event_detach(mng, libvlc_MediaSubItemAdded, event_callback, this);
-                libvlc_event_detach(mng, libvlc_MediaDurationChanged, event_callback, this);
-                libvlc_event_detach(mng, libvlc_MediaParsedChanged, event_callback, this);
-                libvlc_event_detach(mng, libvlc_MediaFreed, event_callback, this);
-                libvlc_event_detach(mng, libvlc_MediaStateChanged, event_callback, this);
-                libvlc_event_detach(mng, libvlc_MediaSubItemTreeAdded, event_callback, this);
-            }
-        }
-    }
-}
 
 void     vlc_media::handle_event  (const libvlc_event_t& event)
 {
@@ -223,6 +193,23 @@ vlc_media* vlc_player::set_media(vlc_media* media)
     return nullptr;
 }
 
+bool     vlc_player::open_mrl(const QString& mrl)
+{
+    if (!hasMedia())
+        return  false;
+
+    bool playing = is_playing();
+    stop();
+    m_current_media->close();
+
+    if (!m_current_media->open_location(mrl.toLocal8Bit().constData()))
+        return false;;
+
+    if (playing)
+        play();
+    return  true;
+}
+
 bool     vlc_player::event_activate(libvlc_event_e event_type, bool active)
 {
     if (m_player )
@@ -242,72 +229,6 @@ bool     vlc_player::event_activate(libvlc_event_e event_type, bool active)
     return false;
 }
 
-void     vlc_player::events_activate_all(bool active)
-{
-    if (m_player  )
-    {
-        libvlc_event_manager_t* mng = libvlc_media_player_event_manager(m_player);
-        if (!mng)
-            return;
-
-        if (active)
-        {
-            libvlc_event_attach(mng, libvlc_MediaPlayerMediaChanged, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerNothingSpecial, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerOpening, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerBuffering, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerPlaying, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerPaused, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerStopped, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerForward, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerBackward, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerEndReached, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerEncounteredError, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerTimeChanged, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerPositionChanged, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerSeekableChanged, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerPausableChanged, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerTitleChanged, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerSnapshotTaken, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerLengthChanged, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerVout, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerScrambledChanged, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerCorked, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerUncorked, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerMuted, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerUnmuted, event_callback, this);
-            libvlc_event_attach(mng, libvlc_MediaPlayerAudioVolume, event_callback, this);
-        }
-        else
-        {
-            libvlc_event_detach(mng, libvlc_MediaPlayerMediaChanged, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerNothingSpecial, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerOpening, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerBuffering, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerPlaying, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerPaused, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerStopped, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerForward, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerBackward, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerEndReached, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerEncounteredError, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerTimeChanged, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerPositionChanged, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerSeekableChanged, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerPausableChanged, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerTitleChanged, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerSnapshotTaken, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerLengthChanged, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerVout, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerScrambledChanged, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerCorked, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerUncorked, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerMuted, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerUnmuted, event_callback, this);
-            libvlc_event_detach(mng, libvlc_MediaPlayerAudioVolume, event_callback, this);
-        }
-    }
-}
 
 void    vlc_player::handle_event(const libvlc_event_t& event)
 {

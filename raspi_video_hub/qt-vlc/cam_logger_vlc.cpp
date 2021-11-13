@@ -14,23 +14,20 @@
 #include "applog.h"
 
 
-
-
 cam_logger_vlc::cam_logger_vlc(const cam_params_t& aParams, QObject* parent )
     : QObject(parent)
 {
     m_params = aParams;
     cutTimer.setSingleShot(true);
     connect(&cutTimer, &QTimer::timeout, this, &cam_logger_vlc::nextFile, Qt::ConnectionType::QueuedConnection);
+    connect(&playWatchdog, &QTimer::timeout, this, &cam_logger_vlc::playChecker, Qt::ConnectionType::QueuedConnection);
 
-    playerWatchDog.setInterval(PLAYER_RESPONSE_TIMEOUT);
-    connect(&playerWatchDog, &QTimer::timeout, this, &cam_logger_vlc::playerHungDetected, Qt::ConnectionType::QueuedConnection);
     initPlayerHandlers();
 }
 
 cam_logger_vlc::~cam_logger_vlc()
 {
-    stopStreaming();
+    stop();
     QThread::msleep(200);
 }
 
@@ -44,7 +41,9 @@ bool cam_logger_vlc::isEventSupport()
 
 int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
 {
-    int interval = 60 * 60 * 1000;// 1 час
+    if (!m_time_duration)
+        return 0;
+    int interval = 2 * 60 * 1000;// 2 минуты
     return interval;
 }
 
@@ -81,15 +80,41 @@ QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
 }
 
 
-
-void     cam_logger_vlc::startStreaming(const QString folder, int timeDuration)
+bool cam_logger_vlc::startMonitoring(QWidget* widget, const QString& mrl)
 {
+
+    if (!widget || mrl.isEmpty())
+        return false;
+
+    if (!m_player)
+    {
+        createPlayer();
+        m_player->set_drawable(widget->winId());
+    }
+
+
+    m_params.mrl = mrl;
+    vlc::vlc_media* media = m_player->set_media(create_media());
+
+    m_player->play();
+    if (media)
+        media->deleteLater();
+    startPlayWatchDog();
+    return true;
+}
+
+bool cam_logger_vlc::startStreaming(const QString folder, int timeDuration)
+{
+    if (folder.isEmpty() || !timeDuration)
+        return false;
+
     mStorageFolder = folder;
     m_time_duration = timeDuration ;
     nextFile();
+    return true;
 }
 
-void     cam_logger_vlc::stopStreaming  ()
+void     cam_logger_vlc::stop  ()
 {
     releasePlayer();
 }
@@ -120,6 +145,19 @@ int cam_logger_vlc::setupMediaForStreaming(vlc::vlc_media* media)
     return time_len;
 }
 
+void cam_logger_vlc::set_mrl(const QString& mrl)
+{
+    if (m_params.mrl != mrl)
+    {
+        m_params.mrl = mrl;
+        if (m_player && m_player->hasMedia())
+        {
+            m_player->open_mrl(mrl);
+        }
+
+    }
+}
+
 vlc::vlc_media*  cam_logger_vlc::create_media()
 {
     QString str;
@@ -127,10 +165,9 @@ vlc::vlc_media*  cam_logger_vlc::create_media()
     vlc::vlc_media* media   = new vlc::vlc_media;
     if (media)
     {
+        media->add_option(":rtsp-timeout=5000");
         if (media->open_location(get_mrl().toLocal8Bit().constData()))
         {
-
-            media->add_option(":rtsp-timeout=5000");
             m_file_timelen = setupMediaForStreaming(media);
             div_t t     = div(m_file_timelen, 1000);
             str = tr("%1 create next media  interval %2.%3").arg(get_name()).arg(t.quot).arg(t.rem);
@@ -146,12 +183,6 @@ vlc::vlc_media*  cam_logger_vlc::create_media()
     return media;
 }
 
-void   cam_logger_vlc::player_events(const libvlc_event_t event)
-{
-    player_event_handler_t handler = playerHandlers.value(static_cast<libvlc_event_e>(event.type));
-    if (handler)
-        handler(m_player);
-}
 
 void cam_logger_vlc::nextFile()
 {
@@ -166,7 +197,7 @@ void cam_logger_vlc::nextFile()
     m_player->play();
     if (media)
         media->deleteLater();
-    playerWatchDog.start();
+
 }
 
 
@@ -175,72 +206,66 @@ void cam_logger_vlc::initPlayerHandlers()
     namespace p = std::placeholders;
     playerHandlers[libvlc_MediaPlayerPlaying] = std::bind(&cam_logger_vlc::OnPlayerPlaying, this, p::_1);
     playerHandlers[libvlc_MediaPlayerStopped] = std::bind(&cam_logger_vlc::OnPlayerStopped, this, p::_1);
-    playerHandlers[libvlc_MediaPlayerEncounteredError] = std::bind(&cam_logger_vlc::OnPlayerError, this, p::_1);
-    playerHandlers[libvlc_MediaPlayerEndReached] = std::bind(&cam_logger_vlc::OnPlayerEndReached, this, p::_1);
-    playerHandlers[libvlc_MediaPlayerPositionChanged] = std::bind(&cam_logger_vlc::OnPlayerPosition, this, p::_1);
 }
 
 void cam_logger_vlc::OnPlayerStopped(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
-    QString str = tr("%1 player stopped,replace media").arg(get_name());
-    appLog::write(0, str);
-    qDebug() << str;
+    if (isStreaming())
+    {
+        QString str = tr("%1 player stopped").arg(get_name());
+        appLog::write(0, str);
+        qDebug() << str;
+
+    }
+    else
+    {
+        emit onStopMon();
+    }
 }
 
 void cam_logger_vlc::OnPlayerPlaying(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
-    QString str = tr("%1 player playing").arg(get_name());
-    appLog::write(0, str);
-    cutTimer.setInterval(m_file_timelen);
-    cutTimer.start();
+    if (isStreaming())
+    {
+        QString str = tr("%1 player playing").arg(get_name());
+        appLog::write(0, str);
+        cutTimer.setInterval(m_file_timelen);
+        cutTimer.start();
+    }
+    else
+    {
+        emit onStartMon();
+    }
+
 
 }
 
-void cam_logger_vlc::OnPlayerError(vlc::vlc_player* player)
+
+void   cam_logger_vlc::player_events(const libvlc_event_t event)
 {
-    Q_UNUSED(player)
-    QString str = tr("%1 player stopped, errors encountered %2").arg(get_name()).arg(m_player->get_last_errors().join(", "));
-    appLog::write(0, str);
-    qDebug() << str;
-
+    player_event_handler_t handler = playerHandlers.value(static_cast<libvlc_event_e>(event.type));
+    if (handler)
+        handler(m_player);
 }
 
 
-void cam_logger_vlc::OnPlayerEndReached(vlc::vlc_player* player)
-{
-    Q_UNUSED(player)
-    QString str = tr("%1 player end reached").arg(get_name());
-    appLog::write(0, str);
-    qDebug() << str;
-    create_media();
-}
-
-
-void cam_logger_vlc::OnPlayerPosition(vlc::vlc_player* player)
-{
-
-    playerWatchDog.stop();
-    playerWatchDog.start();
-    //QString str = tr("%1 player position changed").arg(get_name());
-    //qDebug() << str;
-    Q_UNUSED(player)
-
-}
-
-void      cam_logger_vlc::createPlayer()
+vlc::vlc_player*   cam_logger_vlc::createPlayer()
 {
     if (!m_player)
     {
         m_player = new vlc::vlc_player;
+        connect(m_player, &vlc::vlc_player::player_event, this, &cam_logger_vlc::player_events, Qt::ConnectionType::QueuedConnection);
+
         QList<libvlc_event_e> keys = playerHandlers.keys();
         for ( libvlc_event_e&   event : keys )
         {
             m_player->event_activate(event, true);
         }
-        connect(m_player, &vlc::vlc_player::player_event, this, &cam_logger_vlc::player_events, Qt::ConnectionType::QueuedConnection);
+
     }
+    return m_player;
 }
 
 void      cam_logger_vlc::releasePlayer()
@@ -262,13 +287,42 @@ void      cam_logger_vlc::releasePlayer()
 
 }
 
-void     cam_logger_vlc::playerHungDetected()
+void cam_logger_vlc::playChecker()
 {
-    qDebug() << "Player hung detected!!!";
-    nextFile();
+    libvlc_media_stats_t stats =  m_player->get_media_stats();
+    if (m_displayedPictures != stats.i_displayed_pictures)
+    {
+        m_displayedPictures = stats.i_displayed_pictures;
+        emit framesChanged(m_displayedPictures);
+        playWatchdog.start();
+        return;
+    }
+    if (isStreaming())
+    {
+
+    }
+    else
+    {
+        emit onError();
+    }
+
 }
 
-//    Пересоздать player при обрыве связи
-//    удалять файлы нулевой длины
+void cam_logger_vlc::startPlayWatchDog()
+{
+    m_displayedPictures = 0;
+    playWatchdog.setSingleShot(true);
+    playWatchdog.setInterval(10000);
+    playWatchdog.start();
+}
 
+
+bool cam_logger_vlc::togglePlaying()
+{
+    if (m_player)
+    {
+        return m_player->is_playing() ? m_player->stop() : m_player->play();
+    }
+    return false;
+}
 
