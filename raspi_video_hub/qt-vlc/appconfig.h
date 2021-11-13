@@ -20,6 +20,7 @@ public:
     static void        setValue(QString key, QVariant value);
     static int         get_disc_free_space_percent() { return value("COMMON/diskfreespace").toInt() ;}
     static int         get_mon_camera     () { return value("DEV/CAMERA").toInt();}
+    static void        set_mon_camera     (int camNo) {setValue("DEV/CAMERA", camNo);}
     static QString     get_uart_device    () { return value("USART/DEVICE").toString();}
     static quint32     get_uart_speed     () { return value("USART/BAUD").toUInt();}
     static quint8      get_devid          () { return static_cast<quint8>(value("DEV/ID").toUInt());}

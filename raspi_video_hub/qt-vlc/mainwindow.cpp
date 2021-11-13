@@ -249,19 +249,19 @@ void MainWindow::on_blink()
     blinker.start();
 }
 
-void MainWindow::onCamSwitch(quint8 cam_num)
+void MainWindow::onCamSwitch(quint8 camId)
 {
-    QObject* sobj = sender();
+    //QObject* sobj = sender();
 
-    if (appState.camId != cam_num)
+    if (appState.camId != camId)
     {
 
-        appState.camId = cam_num;
-        const cam_logger_vlc* clogger = loggers.at(cam_num);
-        QString str = tr("Monitor switch to camera (%1) %2").arg(int(cam_num)).arg(clogger->get_mrl());
+        appState.camId = camId;
+        appConfig::set_mon_camera(camId);
+        const cam_logger_vlc* clogger = loggers.at(camId);
+        QString str = tr("Monitor switch to camera (%1) %2").arg(int(camId)).arg(clogger->get_mrl());
         qDebug() << str;
         appLog::write(6, str);
-
 
         cam_monitor->startMonitoring(&m_camWindow, clogger->get_mrl());
         str = QString("Wait data from %1").arg(clogger->get_name());
@@ -278,6 +278,7 @@ void MainWindow::start_cam_monitor()
     cam_monitor = new cam_logger_vlc({-1, "", ""});
     connect(cam_monitor, &cam_logger_vlc::onStartMon, this, &MainWindow::onStartMon);
     connect(cam_monitor, &cam_logger_vlc::onStopMon, this, &MainWindow::onStopMon);
+    connect(cam_monitor, &cam_logger_vlc::onError, this, &MainWindow::onMonitorError);
     connect(cam_monitor, &cam_logger_vlc::framesChanged, this, &MainWindow::onFramesChanged);
 
     int cam_id = std::max(appConfig::get_mon_camera(), 0);
@@ -308,6 +309,13 @@ void MainWindow::onStopMon()
     m_camWindow.hide();
 }
 
+void MainWindow::onMonitorError()
+{
+    const cam_logger_vlc* clogger = loggers.at(appState.camId);
+    QString str = QString("Camera %1 not response monWidget ").arg(clogger->get_name()).arg(m_camWindow.isVisible() ? "Visible " : "Hide");
+    qDebug() << str;
+    cam_monitor->startMonitoring(&m_camWindow, clogger->get_mrl());
+}
 
 void MainWindow::start_loggers()
 {

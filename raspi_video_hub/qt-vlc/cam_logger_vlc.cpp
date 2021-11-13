@@ -289,13 +289,13 @@ void      cam_logger_vlc::releasePlayer()
 
 void cam_logger_vlc::playChecker()
 {
-    libvlc_media_stats_t stats;
-    m_player->get_media_stats(stats);
+    libvlc_media_stats_t stats =  m_player->get_media_stats();
     if (m_displayedPictures != stats.i_displayed_pictures)
     {
         m_displayedPictures = stats.i_displayed_pictures;
         emit framesChanged(m_displayedPictures);
         playWatchdog.start();
+        return;
     }
     if (isStreaming())
     {
@@ -312,7 +312,7 @@ void cam_logger_vlc::startPlayWatchDog()
 {
     m_displayedPictures = 0;
     playWatchdog.setSingleShot(true);
-    playWatchdog.setInterval(5000);
+    playWatchdog.setInterval(10000);
     playWatchdog.start();
 }
 

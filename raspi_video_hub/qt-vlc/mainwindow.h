@@ -44,9 +44,10 @@ private slots:
     void onParse();
 
     void on_blink();
-    void onCamSwitch(quint8 camNum);
+    void onCamSwitch(quint8 camId);
     void on_bTestUpdate_clicked();
     void onFramesChanged(int frames);
+    void onMonitorError();
 
 private:
     void closeEvent(QCloseEvent* event) override;
