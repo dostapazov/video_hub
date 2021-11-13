@@ -36,6 +36,7 @@ LIBS += -L/usr/X11/lib -lX11
 }
 
 SOURCES += recorder_main.cpp\
+	fan_control.cpp \
 		mainwindow.cpp \
 	appconfig.cpp \
 	crc.cpp \

@@ -110,8 +110,15 @@ private:
     static QString get_update_file_name();
     static void    check_need_update   ();
 
-
-
 };
+
+#ifndef DESKTOP_DEBUG_BUILD
+    #include <wiringPi.h>
+#else
+    #define digitalRead(x)
+    #define digitalWrite(x,y)
+
+#endif
+
 
 #endif // MAINWINDOW_H
