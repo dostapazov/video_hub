@@ -99,7 +99,7 @@ QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
         file_name = get_uniq_name();
         ++counter;
     }
-    while (QFile::exists(file_name));
+    while (QFile::exists(file_name) && counter < 100);
 
     return file_name;
 }
@@ -155,7 +155,8 @@ int cam_logger_vlc::setupMediaForStreaming(vlc::vlc_media* media)
 {
     QString str;
     QDateTime dtm     = QDateTime::currentDateTime();
-    m_CurrentFileName = get_file_name(dtm);
+    QString fileName = get_file_name(dtm);
+    m_streamFiles.append(fileName);
     int time_len      = get_time_interval(dtm);
     media->add_option(":no-audio");
     media->add_option(":no-overlay");
@@ -165,7 +166,7 @@ int cam_logger_vlc::setupMediaForStreaming(vlc::vlc_media* media)
     media->add_option(str.toLocal8Bit().constData());
 
 
-    str = QString(":sout=#standard{access=file, mux=ts,dst=%1}").arg(m_CurrentFileName);
+    str = QString(":sout=#standard{access=file, mux=ts,dst=%1}").arg(fileName);
     media->add_option(str.toLocal8Bit().constData());
     media->add_option(":demux=h264");
     return time_len;
@@ -214,24 +215,23 @@ vlc::vlc_media*  cam_logger_vlc::create_media()
 
 void cam_logger_vlc::removeEmptyPreviousFile()
 {
-    QFile file;
-    file.setFileName(m_CurrentFileName);
-    if (file.exists() && QFileInfo(file).size())
+    while (m_streamFiles.count() > 1)
     {
-        qDebug() << "remove empty file " << m_CurrentFileName;
-        file.remove();
+        QFile file;
+        file.setFileName(m_streamFiles.takeFirst());
+        if (file.exists() && 0 == QFileInfo(file).size())
+        {
+            qDebug() << "remove empty file " << file.fileName();
+            file.remove();
+        }
     }
-    m_CurrentFileName = QString();
 }
 
 
 void cam_logger_vlc::nextFile()
 {
-    qDebug() << this->get_name() << " -- next file";
     if (cutTimer.isActive())
         cutTimer.stop ();
-
-    removeEmptyPreviousFile();
 
     createPlayer();
 
@@ -240,8 +240,9 @@ void cam_logger_vlc::nextFile()
     m_player->play();
     if (media)
         media->deleteLater();
-    startPlayWatchDog();
 
+    removeEmptyPreviousFile();
+    startPlayWatchDog();
 }
 
 
@@ -275,12 +276,13 @@ void cam_logger_vlc::OnPlayerPlaying(vlc::vlc_player* player)
         appLog::write(0, str);
         cutTimer.setInterval(m_file_timelen);
         cutTimer.start();
+
     }
     else
     {
         emit onStartMon();
     }
-
+    startPlayWatchDog();
 
 }
 
@@ -334,10 +336,13 @@ void cam_logger_vlc::playChecker()
     libvlc_media_stats_t stats =  m_player->get_media_stats();
     if (m_demuxReadBytes != stats.i_demux_read_bytes)
     {
-
+        if (!isStreaming())
+        {
+            emit framesChanged(stats.i_displayed_pictures);
+        }
         m_demuxReadBytes = stats.i_demux_read_bytes;
         qDebug() << get_name() << " read bytes " << m_demuxReadBytes;
-        emit framesChanged(m_demuxReadBytes);
+
         playWatchdog.start();
         return;
     }

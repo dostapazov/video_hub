@@ -94,14 +94,14 @@ private:
     QTimer        playWatchdog;
 
     QString       m_StorageFolder;
-    QString       m_CurrentFileName;
+    QStringList   m_streamFiles;
     int           m_file_timelen    = 0;
     int           m_network_caching = 300;
     int           m_time_duration = 0;
 
     int           m_demuxReadBytes  = 0;
 
-    static constexpr int PLAY_WATCHDOG_TIMEOUT = 5000;
+    static constexpr int PLAY_WATCHDOG_TIMEOUT = 3000;
 
 
     vlc::vlc_player*  m_player     = nullptr;
