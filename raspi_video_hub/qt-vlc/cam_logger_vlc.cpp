@@ -141,6 +141,7 @@ bool cam_logger_vlc::startStreaming(const QString folder, int timeDuration)
 
     m_StorageFolder = folder;
     m_time_duration = timeDuration ;
+    connect(this, &cam_logger_vlc::onError, this, &cam_logger_vlc::nextFile);
     nextFile();
     return true;
 }
@@ -167,7 +168,8 @@ int cam_logger_vlc::setupMediaForStreaming(vlc::vlc_media* media)
     str = QString(":sout=#standard{access=file, mux=ts,dst=%1}").arg(fileName);
     media->add_option(str.toLocal8Bit().constData());
     media->add_option(":demux=h264");
-    return time_len;
+
+    return time_len + m_network_caching;
 }
 
 void cam_logger_vlc::set_mrl(const QString& mrl)
@@ -218,7 +220,7 @@ void cam_logger_vlc::removeEmptyPreviousFile()
         file.setFileName(m_streamFiles.takeFirst());
         if (file.exists() && 0 == QFileInfo(file).size())
         {
-            qDebug() << "remove empty file " << file.fileName();
+            qDebug().noquote() << "remove empty file " << file.fileName();
             file.remove();
         }
     }
@@ -234,6 +236,8 @@ void cam_logger_vlc::nextFile()
     vlc::vlc_media* media = create_media();
     media = m_player->set_media(media);
     m_player->play();
+
+
     if (media)
         media->deleteLater();
 
@@ -252,33 +256,27 @@ void cam_logger_vlc::initPlayerHandlers()
 void cam_logger_vlc::OnPlayerStopped(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
-    if (isStreaming())
-    {
-        QString str = QString("%1 player stopped").arg(get_name());
-        appLog::write(0, str);
-    }
-    else
-    {
-        emit onStopMon();
-    }
+    QString str = QString("%1 player stopped").arg(get_name());
+    appLog::write(0, str);
+    m_Playing = false;
+    emit onPlayStop();
 }
 
 void cam_logger_vlc::OnPlayerPlaying(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
+    QString str = QString("%1 player playing").arg(get_name());
+    appLog::write(0, str);
+    m_Playing = true;
     if (isStreaming())
     {
-        QString str = QString("%1 player playing").arg(get_name());
-        appLog::write(0, str);
+        cutTimer.stop();
         cutTimer.setInterval(m_file_timelen);
         cutTimer.start();
+    }
 
-    }
-    else
-    {
-        emit onStartMon();
-    }
     startPlayWatchDog();
+    emit onPlayStart();
 
 }
 
@@ -337,14 +335,12 @@ void cam_logger_vlc::playChecker()
         return;
     }
 
-    if (isStreaming())
+    if (m_Playing)
     {
-        nextFile();
+        appLog::write(0, QString("%1 not respond").arg(get_name()));
     }
-    else
-    {
-        emit onError();
-    }
+
+    emit onError();
 }
 
 void cam_logger_vlc::startPlayWatchDog()

@@ -19,7 +19,7 @@ void appLog::logWrite(int log_level, QString message)
     if (level <= log_level)
         return;
 
-    qDebug() << QString("level %1 : ").arg(log_level) << message;
+    qDebug().noquote() << QString("level %1 : ").arg(log_level) << message;
     logFile.open(QFile::Text | (logFile.exists() ? QFile::Append : QFile::WriteOnly));
     if (logFile.size() > 256000)
     {

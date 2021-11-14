@@ -50,8 +50,8 @@ public:
     bool togglePlaying();
 
 signals :
-    void onStartMon();
-    void onStopMon();
+    void onPlayStart();
+    void onPlayStop();
     void onError();
     void framesChanged(int frames);
 
@@ -82,6 +82,7 @@ private:
     void          releasePlayer();
     bool          isEventSupport();
     bool          m_StreamingMode = false;
+    bool          m_Playing = false;
 
     cam_params_t  m_params;
     QTimer        cutTimer;

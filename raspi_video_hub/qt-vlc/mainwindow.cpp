@@ -267,8 +267,8 @@ void MainWindow::start_cam_monitor()
 {
     appLog::write(2, "start_cam_monitor next must be start_cam_switch");
     cam_monitor = new cam_logger_vlc({-1, "Monitor logger", ""});
-    connect(cam_monitor, &cam_logger_vlc::onStartMon, this, &MainWindow::onStartMon);
-    connect(cam_monitor, &cam_logger_vlc::onStopMon, this, &MainWindow::onStopMon);
+    connect(cam_monitor, &cam_logger_vlc::onPlayStart, this, &MainWindow::onStartMon);
+    connect(cam_monitor, &cam_logger_vlc::onPlayStop, this, &MainWindow::onStopMon);
     connect(cam_monitor, &cam_logger_vlc::onError, this, &MainWindow::onMonitorError);
     connect(cam_monitor, &cam_logger_vlc::framesChanged, this, &MainWindow::onFramesChanged);
 
