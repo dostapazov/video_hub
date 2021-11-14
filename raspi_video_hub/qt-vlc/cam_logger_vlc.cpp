@@ -46,19 +46,25 @@ constexpr long SEC_MSECS  = 1000;
 constexpr long MIN_MSECS  = 60 * SEC_MSECS;
 constexpr long HOUR_MSECS = 60 * MIN_MSECS;
 
-void limitDay(const QDateTime& dtm, long& duration)
+void limitDuration(const QDateTime& dtm, long& duration)
 {
     QDateTime endDtm = dtm.addMSecs(duration);
-    if (endDtm.date().day() != dtm.date().day())
+    if (endDtm.time().second() || endDtm.time().msec())
     {
         duration -= endDtm.time().msec();
         duration -= endDtm.time().second() * SEC_MSECS;
+        endDtm = dtm.addMSecs(duration);
+    }
+
+    if (endDtm.date().day() != dtm.date().day())
+    {
+
         duration -= endDtm.time().minute() * MIN_MSECS;
         duration -= endDtm.time().hour() * HOUR_MSECS;
     }
 }
 
-int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
+int    cam_logger_vlc::get_time_interval(const QDateTime& dtm)
 {
 
     m_time_duration = appConfig::get_time_duration();
@@ -67,7 +73,7 @@ int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
     long current_ms  = time.hour() * HOUR_MSECS + time.minute() * MIN_MSECS + time.second() * SEC_MSECS;
     ldiv_t ldt = ldiv(current_ms, duration_ms);
     duration_ms -= ldt.rem;
-    limitDay(dtm, duration_ms);
+    limitDuration(dtm, duration_ms);
 
     return duration_ms;
 }
