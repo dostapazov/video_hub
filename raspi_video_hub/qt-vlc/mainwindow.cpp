@@ -299,9 +299,10 @@ void MainWindow::onStartMon()
     const cam_logger_vlc* clogger = loggers.at(appState.camId);
     QString str = QString("Play from  %1").arg(clogger->get_name());
     label->setText(str);
-    m_camWindow.show();
-    m_camWindow.setFocus(Qt::FocusReason::MouseFocusReason);
     FrameNo->setText("-");
+    m_camWindow.show();
+    m_camWindow.activateWindow();
+
 
 }
 
