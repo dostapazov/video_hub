@@ -8,12 +8,13 @@
  *
  * *********************************************/
 
-#include <QFile>
+
 #include "cam_logger_vlc.h"
 #include "qdatetime.h"
 #include <qdir.h>
 #include "applog.h"
 #include "appconfig.h"
+#include <QFile>
 
 
 cam_logger_vlc::cam_logger_vlc(const cam_params_t& aParams, QObject* parent )
@@ -73,7 +74,7 @@ int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
 
 QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
 {
-    QString spath    = tr("%1/%2/%3")
+    QString spath    = QString("%1/%2/%3")
                        .arg(m_StorageFolder)
                        .arg(get_name())
                        .arg(dtm.toString("yyyy-MM-dd"));
@@ -120,6 +121,7 @@ bool cam_logger_vlc::startMonitoring(QWidget* widget, const QString& mrl)
     m_player->set_drawable((void*)widget->winId());
 #endif
 
+
     m_params.mrl = mrl;
     vlc::vlc_media* media = m_player->set_media(create_media());
 
@@ -159,11 +161,11 @@ int cam_logger_vlc::setupMediaForStreaming(vlc::vlc_media* media)
     media->add_option(":no-overlay");
     media->add_option(":sout-mp4-faststart");
 
-    str = tr(":network-caching=%1").arg(m_network_caching);
+    str = QString(":network-caching=%1").arg(m_network_caching);
     media->add_option(str.toLocal8Bit().constData());
 
 
-    str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(m_CurrentFileName);
+    str = QString(":sout=#standard{access=file, mux=ts,dst=%1}").arg(m_CurrentFileName);
     media->add_option(str.toLocal8Bit().constData());
     media->add_option(":demux=h264");
     return time_len;
@@ -192,17 +194,17 @@ vlc::vlc_media*  cam_logger_vlc::create_media()
         media->add_option(":rtsp-timeout=5000");
         if (media->open_location(get_mrl().toLocal8Bit().constData()))
         {
-            str = tr("%1 create next media ").arg(get_name());
+            str = QString("%1 create next media ").arg(get_name());
             if (isStreaming())
             {
                 m_file_timelen = setupMediaForStreaming(media);
                 div_t t     = div(m_file_timelen, 1000);
-                str += tr(" interval % 1. % 2").arg(t.quot).arg(t.rem);
+                str += QString(" interval %1. %2").arg(t.quot).arg(t.rem);
             }
         }
         else
         {
-            str = tr("%1 error open  ").arg(get_name()).arg(get_mrl());
+            str = QString("%1 error open  ").arg(get_name()).arg(get_mrl());
 
         }
         appLog::write(0, str);
@@ -255,7 +257,7 @@ void cam_logger_vlc::OnPlayerStopped(vlc::vlc_player* player)
     Q_UNUSED(player)
     if (isStreaming())
     {
-        QString str = tr("%1 player stopped").arg(get_name());
+        QString str = QString("%1 player stopped").arg(get_name());
         appLog::write(0, str);
     }
     else
@@ -269,7 +271,7 @@ void cam_logger_vlc::OnPlayerPlaying(vlc::vlc_player* player)
     Q_UNUSED(player)
     if (isStreaming())
     {
-        QString str = tr("%1 player playing").arg(get_name());
+        QString str = QString("%1 player playing").arg(get_name());
         appLog::write(0, str);
         cutTimer.setInterval(m_file_timelen);
         cutTimer.start();
@@ -330,13 +332,16 @@ void      cam_logger_vlc::releasePlayer()
 void cam_logger_vlc::playChecker()
 {
     libvlc_media_stats_t stats =  m_player->get_media_stats();
-    if (m_displayedFrames != stats.i_displayed_pictures)
+    if (m_demuxReadBytes != stats.i_demux_read_bytes)
     {
-        m_displayedFrames = stats.i_displayed_pictures;
-        emit framesChanged(m_displayedFrames);
+
+        m_demuxReadBytes = stats.i_demux_read_bytes;
+        qDebug() << get_name() << " read bytes " << m_demuxReadBytes;
+        emit framesChanged(m_demuxReadBytes);
         playWatchdog.start();
         return;
     }
+
     if (isStreaming())
     {
         nextFile();
@@ -350,11 +355,11 @@ void cam_logger_vlc::playChecker()
 
 void cam_logger_vlc::startPlayWatchDog()
 {
-    m_displayedFrames = 0;
+    m_demuxReadBytes = 0;
     if (playWatchdog.isActive())
         playWatchdog.stop();
     playWatchdog.setSingleShot(true);
-    playWatchdog.setInterval(10000);
+    playWatchdog.setInterval(PLAY_WATCHDOG_TIMEOUT);
     playWatchdog.start();
 }
 

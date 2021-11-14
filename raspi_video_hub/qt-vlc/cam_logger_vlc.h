@@ -99,7 +99,9 @@ private:
     int           m_network_caching = 300;
     int           m_time_duration = 0;
 
-    int           m_displayedFrames  = 0;
+    int           m_demuxReadBytes  = 0;
+
+    static constexpr int PLAY_WATCHDOG_TIMEOUT = 5000;
 
 
     vlc::vlc_player*  m_player     = nullptr;
