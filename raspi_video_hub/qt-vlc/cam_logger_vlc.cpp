@@ -8,14 +8,12 @@
  *
  * *********************************************/
 
-
 #include "cam_logger_vlc.h"
 #include "qdatetime.h"
 #include <qdir.h>
 #include "applog.h"
 #include "appconfig.h"
 #include <QFile>
-
 
 cam_logger_vlc::cam_logger_vlc(const cam_params_t& aParams, QObject* parent )
     : QObject(parent)
@@ -66,7 +64,6 @@ void limitDuration(const QDateTime& dtm, long& duration)
 
 int    cam_logger_vlc::get_time_interval(const QDateTime& dtm)
 {
-
     m_time_duration = appConfig::get_time_duration();
     QTime time = dtm.time();
     long duration_ms = m_time_duration * MIN_MSECS;
@@ -110,7 +107,6 @@ QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
     return file_name;
 }
 
-
 bool cam_logger_vlc::startMonitoring(QWidget* widget, const QString& mrl)
 {
     m_StreamingMode = false;
@@ -126,7 +122,6 @@ bool cam_logger_vlc::startMonitoring(QWidget* widget, const QString& mrl)
 #else
     m_player->set_drawable((void*)widget->winId());
 #endif
-
 
     m_params.mrl = mrl;
     vlc::vlc_media* media = m_player->set_media(create_media());
@@ -155,8 +150,6 @@ void     cam_logger_vlc::stop  ()
     releasePlayer();
 }
 
-
-
 int cam_logger_vlc::setupMediaForStreaming(vlc::vlc_media* media)
 {
     QString str;
@@ -170,7 +163,6 @@ int cam_logger_vlc::setupMediaForStreaming(vlc::vlc_media* media)
 
     str = QString(":network-caching=%1").arg(m_network_caching);
     media->add_option(str.toLocal8Bit().constData());
-
 
     str = QString(":sout=#standard{access=file, mux=ts,dst=%1}").arg(fileName);
     media->add_option(str.toLocal8Bit().constData());
@@ -187,7 +179,6 @@ void cam_logger_vlc::set_mrl(const QString& mrl)
         {
             m_player->open_mrl(mrl);
         }
-
     }
 }
 
@@ -232,7 +223,6 @@ void cam_logger_vlc::removeEmptyPreviousFile()
         }
     }
 }
-
 
 void cam_logger_vlc::nextFile()
 {
@@ -292,14 +282,12 @@ void cam_logger_vlc::OnPlayerPlaying(vlc::vlc_player* player)
 
 }
 
-
 void   cam_logger_vlc::player_events(const libvlc_event_t event)
 {
     player_event_handler_t handler = playerHandlers.value(static_cast<libvlc_event_e>(event.type));
     if (handler)
         handler(m_player);
 }
-
 
 vlc::vlc_player*   cam_logger_vlc::createPlayer()
 {
@@ -330,11 +318,9 @@ void      cam_logger_vlc::releasePlayer()
         if (media)
             media->deleteLater();
 
-
         m_player->deleteLater();
         m_player = nullptr;
     }
-
 }
 
 void cam_logger_vlc::playChecker()
@@ -347,8 +333,6 @@ void cam_logger_vlc::playChecker()
             emit framesChanged(stats.i_displayed_pictures);
         }
         m_demuxReadBytes = stats.i_demux_read_bytes;
-        qDebug() << get_name() << " read bytes " << m_demuxReadBytes;
-
         playWatchdog.start();
         return;
     }
@@ -361,7 +345,6 @@ void cam_logger_vlc::playChecker()
     {
         emit onError();
     }
-
 }
 
 void cam_logger_vlc::startPlayWatchDog()
@@ -374,7 +357,6 @@ void cam_logger_vlc::startPlayWatchDog()
     playWatchdog.start();
 }
 
-
 bool cam_logger_vlc::togglePlaying()
 {
     if (m_player)
@@ -383,4 +365,3 @@ bool cam_logger_vlc::togglePlaying()
     }
     return false;
 }
-

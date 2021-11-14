@@ -28,7 +28,6 @@ struct cam_params_t
     bool disabled = false;
 };
 
-
 class cam_logger_vlc : public QObject
 {
     Q_OBJECT
@@ -50,13 +49,11 @@ public:
     bool isStreaming() { return m_StreamingMode;}
     bool togglePlaying();
 
-
 signals :
     void onStartMon();
     void onStopMon();
     void onError();
     void framesChanged(int frames);
-
 
 private Q_SLOTS:
 
@@ -82,14 +79,11 @@ private:
     void      removeEmptyPreviousFile();
     vlc::vlc_media*  create_media();
 
-
     void          releasePlayer();
     bool          isEventSupport();
-
     bool          m_StreamingMode = false;
 
     cam_params_t  m_params;
-
     QTimer        cutTimer;
     QTimer        playWatchdog;
 
@@ -102,8 +96,6 @@ private:
     int           m_demuxReadBytes  = 0;
 
     static constexpr int PLAY_WATCHDOG_TIMEOUT = 3000;
-
-
     vlc::vlc_player*  m_player     = nullptr;
 };
 

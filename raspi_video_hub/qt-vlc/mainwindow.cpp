@@ -14,7 +14,6 @@
 #include <signal.h>
 #include <unistd.h>
 
-
 const char* const MainWindow::vlcArgs[] =
 {
     "--noaudio",
@@ -37,6 +36,7 @@ void MainWindow::initBlinker()
 #endif
 
     connect(&blinker, &QTimer::timeout, this, &MainWindow::on_blink, Qt::ConnectionType::QueuedConnection);
+    blinker.start    ();
 }
 
 MainWindow::MainWindow(QWidget* parent) :
@@ -44,16 +44,10 @@ MainWindow::MainWindow(QWidget* parent) :
 
 {
     setupUi(this);
-    m_camWindow.setWindowFlags(Qt::WindowStaysOnTopHint );
-    //m_camWindow.setWindowFlags(Qt::X11BypassWindowManagerHint);
-
-
     appState = PCK_STATE_t {0xFF, 77, 777};
     connect(this, &MainWindow::cam_switch, this, &MainWindow::onCamSwitch, Qt::ConnectionType::QueuedConnection);
     init_gpio  ();
     initBlinker();
-
-    blinker.start    ();
     init_libvlc      ();
     init_uart        ();
     load_config      ();
@@ -146,7 +140,6 @@ QList<cam_params_t> MainWindow::readCameraList()
 
 void MainWindow::load_config()
 {
-
     QList<cam_params_t> cams = readCameraList();
     for ( cam_params_t& cp : cams)
     {
@@ -155,10 +148,8 @@ void MainWindow::load_config()
         appLog::write(0, str);
     }
 
-
 #ifdef DESKTOP_DEBUG_BUILD
     appConfig::setValue("VLOG/Folder", "streaming");
-
 #ifdef Q_OS_LINUX
     appConfig::setValue("VLOG/MountPoint", "/home/dostapazov/raspi_log/");
 #else
@@ -166,7 +157,6 @@ void MainWindow::load_config()
 #endif
 
 #endif
-
 }
 
 void MainWindow::deinit_all()
@@ -254,11 +244,8 @@ void MainWindow::on_blink()
 
 void MainWindow::onCamSwitch(quint8 camId)
 {
-    //QObject* sobj = sender();
-
     if (appState.camId != camId)
     {
-
         appState.camId = camId;
         appConfig::set_mon_camera(camId);
         const cam_logger_vlc* clogger = loggers.at(camId);
@@ -266,6 +253,7 @@ void MainWindow::onCamSwitch(quint8 camId)
         qDebug() << str;
         appLog::write(6, str);
 
+        m_camWindow.setWindowTitle(clogger->get_name());
         cam_monitor->startMonitoring(&m_camWindow, clogger->get_mrl());
         str = QString("Wait data from %1").arg(clogger->get_name());
         label->setText(str);
@@ -300,15 +288,17 @@ void MainWindow::onStartMon()
     QString str = QString("Play from  %1").arg(clogger->get_name());
     label->setText(str);
     FrameNo->setText("-");
+#if defined DESKTOP_DEBUG_BUILD
     m_camWindow.show();
+#else
+    m_camWindow.showFullScreen();
+#endif
     m_camWindow.activateWindow();
-
 
 }
 
 void MainWindow::onStopMon()
 {
-
     const cam_logger_vlc* clogger = loggers.at(appState.camId);
     QString str = QString("%1 lost connection").arg(clogger->get_name());
     appLog::write(6, str);
@@ -361,9 +351,7 @@ void MainWindow::init_gpio()
     appState.fanState = 1;
     digitalWrite(PIN_FAN, 1);
 #endif
-
 }
-
 
 void MainWindow::on_bTestUpdate_clicked()
 {
