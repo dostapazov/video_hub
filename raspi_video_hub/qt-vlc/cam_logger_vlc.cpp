@@ -60,12 +60,9 @@ void limitDay(const QDateTime& dtm, long& duration)
 
 int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
 {
-    if (!m_time_duration)
-        return 0;
 
     m_time_duration = appConfig::get_time_duration();
     QTime time = dtm.time();
-
     long duration_ms = m_time_duration * MIN_MSECS;
     long current_ms  = time.hour() * HOUR_MSECS + time.minute() * MIN_MSECS + time.second() * SEC_MSECS;
     ldiv_t ldt = ldiv(current_ms, duration_ms);
@@ -110,7 +107,7 @@ QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
 
 bool cam_logger_vlc::startMonitoring(QWidget* widget, const QString& mrl)
 {
-
+    m_StreamingMode = false;
     if (!widget || mrl.isEmpty())
         return false;
 
@@ -136,6 +133,7 @@ bool cam_logger_vlc::startMonitoring(QWidget* widget, const QString& mrl)
 
 bool cam_logger_vlc::startStreaming(const QString folder, int timeDuration)
 {
+    m_StreamingMode = true;
     if (folder.isEmpty() || !timeDuration)
         return false;
 
@@ -156,23 +154,20 @@ int cam_logger_vlc::setupMediaForStreaming(vlc::vlc_media* media)
 {
     QString str;
     QDateTime dtm     = QDateTime::currentDateTime();
-    int time_len    = get_time_interval(dtm);
-    if (time_len)
-    {
-        QString file_name = get_file_name(dtm);
+    int time_len      = get_time_interval(dtm);
+    QString file_name = get_file_name(dtm);
 
-        media->add_option(":no-audio");
-        media->add_option(":no-overlay");
-        media->add_option(":sout-mp4-faststart");
+    media->add_option(":no-audio");
+    media->add_option(":no-overlay");
+    media->add_option(":sout-mp4-faststart");
 
-        str = tr(":network-caching=%1").arg(m_network_caching);
-        media->add_option(str.toLocal8Bit().constData());
+    str = tr(":network-caching=%1").arg(m_network_caching);
+    media->add_option(str.toLocal8Bit().constData());
 
 
-        str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(file_name);
-        media->add_option(str.toLocal8Bit().constData());
-        media->add_option(":demux=h264");
-    }
+    str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(file_name);
+    media->add_option(str.toLocal8Bit().constData());
+    media->add_option(":demux=h264");
     return time_len;
 }
 
@@ -199,9 +194,13 @@ vlc::vlc_media*  cam_logger_vlc::create_media()
         media->add_option(":rtsp-timeout=5000");
         if (media->open_location(get_mrl().toLocal8Bit().constData()))
         {
-            m_file_timelen = setupMediaForStreaming(media);
-            div_t t     = div(m_file_timelen, 1000);
-            str = tr("%1 create next media  interval %2.%3").arg(get_name()).arg(t.quot).arg(t.rem);
+            str = tr("%1 create next media ").arg(get_name());
+            if (isStreaming())
+            {
+                m_file_timelen = setupMediaForStreaming(media);
+                div_t t     = div(m_file_timelen, 1000);
+                str += tr(" interval % 1. % 2").arg(t.quot).arg(t.rem);
+            }
         }
         else
         {
@@ -227,6 +226,7 @@ void cam_logger_vlc::nextFile()
     m_player->play();
     if (media)
         media->deleteLater();
+    startPlayWatchDog();
 
 }
 
@@ -318,10 +318,10 @@ void      cam_logger_vlc::releasePlayer()
 void cam_logger_vlc::playChecker()
 {
     libvlc_media_stats_t stats =  m_player->get_media_stats();
-    if (m_displayedPictures != stats.i_displayed_pictures)
+    if (m_displayedFrames != stats.i_displayed_pictures)
     {
-        m_displayedPictures = stats.i_displayed_pictures;
-        emit framesChanged(m_displayedPictures);
+        m_displayedFrames = stats.i_displayed_pictures;
+        emit framesChanged(m_displayedFrames);
         playWatchdog.start();
         return;
     }
@@ -338,7 +338,7 @@ void cam_logger_vlc::playChecker()
 
 void cam_logger_vlc::startPlayWatchDog()
 {
-    m_displayedPictures = 0;
+    m_displayedFrames = 0;
     playWatchdog.setSingleShot(true);
     playWatchdog.setInterval(10000);
     playWatchdog.start();

@@ -47,7 +47,7 @@ public:
     bool startMonitoring(QWidget* widget, const QString& mrl);
     bool startStreaming(const QString folder, int timeDuration);
     void stop();
-    bool isStreaming() { return m_time_duration;}
+    bool isStreaming() { return m_StreamingMode;}
     bool togglePlaying();
 
 
@@ -76,7 +76,7 @@ private:
     void OnPlayerPlaying(vlc::vlc_player* player);
     void startPlayWatchDog();
 
-    int       get_time_interval(const QDateTime &dtm);
+    int       get_time_interval(const QDateTime& dtm);
     QString   get_file_name    (const QDateTime& dtm);
     vlc::vlc_media*  create_media();
     int setupMediaForStreaming(vlc::vlc_media* media);
@@ -84,6 +84,8 @@ private:
 
     void      releasePlayer();
     bool      isEventSupport();
+
+    bool      m_StreamingMode = false;
 
     cam_params_t      m_params;
 
@@ -95,7 +97,7 @@ private:
     int               m_network_caching = 300;
     int               m_time_duration = 0;
 
-    int               m_displayedPictures  = 0;
+    int               m_displayedFrames  = 0;
 
 
     vlc::vlc_player*  m_player     = nullptr;
