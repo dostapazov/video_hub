@@ -213,7 +213,7 @@ bool MainWindow::check_media_drive()
     if ( QDir(strPath).exists() )
     {
 
-        appLog::write(0, tr("directory exists"));
+        appLog::write(0, tr("directory exists. Begin logging video"));
         m_vlog_root = strPath;
     }
     else
@@ -311,11 +311,13 @@ void MainWindow::onMonitorError()
     const cam_logger_vlc* clogger = loggers.at(appState.camId);
 
     bool monWidgetVisible = m_camWindow.isVisible();
-    QString str = QString("Camera %1 not response monWidget %2 ").arg(clogger->get_name()).arg( monWidgetVisible ? "Visible " : "Hide");
-    qDebug() << str;
-    appLog::write(6, str);
+
     if (monWidgetVisible)
+    {
+        QString str = QString("Camera %1 not respond").arg(clogger->get_name());
+        appLog::write(0, str);
         m_camWindow.hide();
+    }
     cam_monitor->startMonitoring(&m_camWindow, clogger->get_mrl());
 }
 
