@@ -51,8 +51,6 @@ void MainWindow::onUARTread()
     QByteArray b = uart->readAll();
 
     appLog::write(6, QString("Recieved %1 byte(s)").arg(b.count()));
-    QString str = b.toHex().toUpper();
-    appLog::write(6, str);
     rxBuf.append(b);
     onParse();
 }

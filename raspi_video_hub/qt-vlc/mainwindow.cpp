@@ -331,16 +331,16 @@ void MainWindow::onMonitorError()
 
 void MainWindow::start_loggers()
 {
-//    if (m_vlog_root.isEmpty() && check_media_drive())
-//    {
-//        start_file_deleter();
-//        int timeDuration = appConfig::get_time_duration();
+    if (m_vlog_root.isEmpty() && check_media_drive())
+    {
+        start_file_deleter();
+        int timeDuration = appConfig::get_time_duration();
 
-//        foreach (cam_logger_vlc* cl, loggers)
-//        {
-//            cl->startStreaming(m_vlog_root, timeDuration);
-//        }
-//    }
+        foreach (cam_logger_vlc* cl, loggers)
+        {
+            cl->startStreaming(m_vlog_root, timeDuration);
+        }
+    }
 }
 
 void MainWindow::init_gpio()

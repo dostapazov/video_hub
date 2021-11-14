@@ -12,6 +12,7 @@
 #include "qdatetime.h"
 #include <qdir.h>
 #include "applog.h"
+#include "appconfig.h"
 
 
 cam_logger_vlc::cam_logger_vlc(const cam_params_t& aParams, QObject* parent )
@@ -39,12 +40,39 @@ bool cam_logger_vlc::isEventSupport()
     return  (sl.size() > 1 && sl.at(0).toInt() >= VLC_VER_EVENT_WORK) ? true : false;
 }
 
+constexpr long SEC_MSECS  = 1000;
+constexpr long MIN_MSECS  = 60 * SEC_MSECS;
+constexpr long HOUR_MSECS = 60 * MIN_MSECS;
+constexpr long DAY_MSECS  = 24 * HOUR_MSECS;
+
+
+void limitDay(const QDateTime& dtm, long& duration)
+{
+    QDateTime endDtm = dtm.addMSecs(duration);
+    if (endDtm.date().day() != dtm.date().day())
+    {
+        duration -= endDtm.time().msec();
+        duration -= endDtm.time().second() * SEC_MSECS;
+        duration -= endDtm.time().minute() * MIN_MSECS;
+        duration -= endDtm.time().hour() * HOUR_MSECS;
+    }
+}
+
 int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
 {
     if (!m_time_duration)
         return 0;
-    int interval = 2 * 60 * 1000;// 2 минуты
-    return interval;
+
+    m_time_duration = appConfig::get_time_duration();
+    QTime time = dtm.time();
+
+    long duration_ms = m_time_duration * MIN_MSECS;
+    long current_ms  = time.hour() * HOUR_MSECS + time.minute() * MIN_MSECS + time.second() * SEC_MSECS;
+    ldiv_t ldt = ldiv(current_ms, duration_ms);
+    duration_ms -= ldt.rem;
+    limitDay(dtm, duration_ms);
+
+    return duration_ms;
 }
 
 QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
@@ -181,7 +209,6 @@ vlc::vlc_media*  cam_logger_vlc::create_media()
 
         }
         appLog::write(0, str);
-        qDebug() << str;
     }
     return media;
 }
@@ -218,8 +245,6 @@ void cam_logger_vlc::OnPlayerStopped(vlc::vlc_player* player)
     {
         QString str = tr("%1 player stopped").arg(get_name());
         appLog::write(0, str);
-        qDebug() << str;
-
     }
     else
     {

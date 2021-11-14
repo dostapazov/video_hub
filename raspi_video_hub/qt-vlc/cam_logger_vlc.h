@@ -76,7 +76,7 @@ private:
     void OnPlayerPlaying(vlc::vlc_player* player);
     void startPlayWatchDog();
 
-    int       get_time_interval(const QDateTime& dtm);
+    int       get_time_interval(const QDateTime &dtm);
     QString   get_file_name    (const QDateTime& dtm);
     vlc::vlc_media*  create_media();
     int setupMediaForStreaming(vlc::vlc_media* media);
