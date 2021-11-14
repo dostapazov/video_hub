@@ -78,26 +78,28 @@ private:
 
     int       get_time_interval(const QDateTime& dtm);
     QString   get_file_name    (const QDateTime& dtm);
+    int       setupMediaForStreaming(vlc::vlc_media* media);
+    void      removeEmptyPreviousFile();
     vlc::vlc_media*  create_media();
-    int setupMediaForStreaming(vlc::vlc_media* media);
 
 
-    void      releasePlayer();
-    bool      isEventSupport();
+    void          releasePlayer();
+    bool          isEventSupport();
 
-    bool      m_StreamingMode = false;
+    bool          m_StreamingMode = false;
 
-    cam_params_t      m_params;
+    cam_params_t  m_params;
 
-    QTimer            cutTimer;
-    QTimer            playWatchdog;
+    QTimer        cutTimer;
+    QTimer        playWatchdog;
 
-    QString           mStorageFolder;
-    int               m_file_timelen    = 0;
-    int               m_network_caching = 300;
-    int               m_time_duration = 0;
+    QString       m_StorageFolder;
+    QString       m_CurrentFileName;
+    int           m_file_timelen    = 0;
+    int           m_network_caching = 300;
+    int           m_time_duration = 0;
 
-    int               m_displayedFrames  = 0;
+    int           m_displayedFrames  = 0;
 
 
     vlc::vlc_player*  m_player     = nullptr;

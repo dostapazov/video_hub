@@ -8,6 +8,7 @@
  *
  * *********************************************/
 
+#include <QFile>
 #include "cam_logger_vlc.h"
 #include "qdatetime.h"
 #include <qdir.h>
@@ -43,8 +44,6 @@ bool cam_logger_vlc::isEventSupport()
 constexpr long SEC_MSECS  = 1000;
 constexpr long MIN_MSECS  = 60 * SEC_MSECS;
 constexpr long HOUR_MSECS = 60 * MIN_MSECS;
-constexpr long DAY_MSECS  = 24 * HOUR_MSECS;
-
 
 void limitDay(const QDateTime& dtm, long& duration)
 {
@@ -75,7 +74,7 @@ int         cam_logger_vlc::get_time_interval(const QDateTime& dtm)
 QString     cam_logger_vlc::get_file_name(const QDateTime& dtm)
 {
     QString spath    = tr("%1/%2/%3")
-                       .arg(mStorageFolder)
+                       .arg(m_StorageFolder)
                        .arg(get_name())
                        .arg(dtm.toString("yyyy-MM-dd"));
     QDir dir (spath);
@@ -137,7 +136,7 @@ bool cam_logger_vlc::startStreaming(const QString folder, int timeDuration)
     if (folder.isEmpty() || !timeDuration)
         return false;
 
-    mStorageFolder = folder;
+    m_StorageFolder = folder;
     m_time_duration = timeDuration ;
     nextFile();
     return true;
@@ -154,9 +153,8 @@ int cam_logger_vlc::setupMediaForStreaming(vlc::vlc_media* media)
 {
     QString str;
     QDateTime dtm     = QDateTime::currentDateTime();
+    m_CurrentFileName = get_file_name(dtm);
     int time_len      = get_time_interval(dtm);
-    QString file_name = get_file_name(dtm);
-
     media->add_option(":no-audio");
     media->add_option(":no-overlay");
     media->add_option(":sout-mp4-faststart");
@@ -165,7 +163,7 @@ int cam_logger_vlc::setupMediaForStreaming(vlc::vlc_media* media)
     media->add_option(str.toLocal8Bit().constData());
 
 
-    str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(file_name);
+    str = tr(":sout=#standard{access=file, mux=ts,dst=%1}").arg(m_CurrentFileName);
     media->add_option(str.toLocal8Bit().constData());
     media->add_option(":demux=h264");
     return time_len;
@@ -212,12 +210,26 @@ vlc::vlc_media*  cam_logger_vlc::create_media()
     return media;
 }
 
+void cam_logger_vlc::removeEmptyPreviousFile()
+{
+    QFile file;
+    file.setFileName(m_CurrentFileName);
+    if (file.exists() && QFileInfo(file).size())
+    {
+        qDebug() << "remove empty file " << m_CurrentFileName;
+        file.remove();
+    }
+    m_CurrentFileName = QString();
+}
+
 
 void cam_logger_vlc::nextFile()
 {
-    qDebug() << this->get_name() << "  -- next file";
+    qDebug() << this->get_name() << " -- next file";
     if (cutTimer.isActive())
         cutTimer.stop ();
+
+    removeEmptyPreviousFile();
 
     createPlayer();
 
@@ -327,7 +339,7 @@ void cam_logger_vlc::playChecker()
     }
     if (isStreaming())
     {
-
+        nextFile();
     }
     else
     {
@@ -339,6 +351,8 @@ void cam_logger_vlc::playChecker()
 void cam_logger_vlc::startPlayWatchDog()
 {
     m_displayedFrames = 0;
+    if (playWatchdog.isActive())
+        playWatchdog.stop();
     playWatchdog.setSingleShot(true);
     playWatchdog.setInterval(10000);
     playWatchdog.start();
