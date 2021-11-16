@@ -8,6 +8,7 @@
 #include <QMap>
 #include <QWindow>
 
+
 #include "ui_mainwindow.h"
 #include "filedeleterthread.h"
 #include "cam_logger_vlc.h"
@@ -59,13 +60,16 @@ private:
 
     void initBlinker();
 
-    void start_cam_monitor();
+    void startCamMonitor();
     void init_gpio  ();
     void init_libvlc();
     void load_config();
     void init_uart  ();
+
     void deinitUART ();
+    void deinitLoggers();
     void deinit_all ();
+
     void start_loggers();
     void start_file_deleter();
     void readCPUtemper();
@@ -84,6 +88,7 @@ private:
 
     QVector<cam_logger_vlc*>   loggers;
     cam_logger_vlc* cam_monitor = nullptr;
+    QWidget*   m_camWindow = nullptr;
     void onStartMon();
     void onStopMon();
 
@@ -96,7 +101,7 @@ private:
     QSerialPort*       uart = Q_NULLPTR;
 
     FileDeleterThread* file_deleter = Q_NULLPTR;
-    QWidget   m_camWindow;
+
 
     int             cam_time_synchro = -1;
     PCK_STATE_t     appState;
@@ -105,6 +110,8 @@ private:
     static QString get_update_file_name();
     static void    check_need_update   ();
 
+    void deinitMonitor();
+    void deinitFileDeleter();
 };
 
 #ifndef DESKTOP_DEBUG_BUILD

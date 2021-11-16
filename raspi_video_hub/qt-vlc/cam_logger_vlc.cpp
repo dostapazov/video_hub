@@ -117,11 +117,15 @@ bool cam_logger_vlc::startMonitoring(QWidget* widget, const QString& mrl)
     {
         createPlayer();
     }
+
+    if (widget)
+    {
 #ifdef Q_OS_LINUX
-    m_player->set_drawable(widget->winId());
+        m_player->set_drawable(widget->winId());
 #else
-    m_player->set_drawable((void*)widget->winId());
+        m_player->set_drawable((void*)widget->winId());
 #endif
+    }
 
     m_params.mrl = mrl;
     vlc::vlc_media* media = m_player->set_media(create_media());

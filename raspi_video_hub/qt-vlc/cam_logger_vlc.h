@@ -48,6 +48,7 @@ public:
     void stop();
     bool isStreaming() { return m_StreamingMode;}
     bool togglePlaying();
+    vlc::vlc_player* getPlayer() {return  m_player;}
 
 signals :
     void onPlayStart();

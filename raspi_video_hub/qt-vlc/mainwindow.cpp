@@ -1,6 +1,4 @@
 //
-#include <QEventLoop>
-#include <QDateTime>
 #include <QDebug>
 #include <QDir>
 //#include <QAction>
@@ -8,6 +6,7 @@
 #include <stdio.h>
 #include "appconfig.h"
 #include "mainwindow.h"
+#include <QOpenGLWidget>
 
 #include "applog.h"
 #include <qpalette.h>
@@ -69,7 +68,7 @@ MainWindow::~MainWindow()
 void MainWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
-    start_cam_monitor();
+    startCamMonitor();
 }
 
 void MainWindow::init_libvlc()
@@ -159,13 +158,8 @@ void MainWindow::load_config()
 #endif
 }
 
-void MainWindow::deinit_all()
+void MainWindow::deinitLoggers()
 {
-    qDebug() << Q_FUNC_INFO << " begin";
-
-    blinker.stop ();
-    disconnect(&blinker );
-
     foreach (cam_logger_vlc* cl, this->loggers)
     {
         cl->stop();
@@ -173,11 +167,20 @@ void MainWindow::deinit_all()
     }
     loggers.clear();
 
+}
+
+void MainWindow::deinitMonitor()
+{
     cam_monitor->stop();
     cam_monitor->deleteLater();
     cam_monitor = nullptr;
+    if (m_camWindow)
+        m_camWindow->deleteLater();
+    m_camWindow = nullptr;
+}
 
-
+void MainWindow::deinitFileDeleter()
+{
     if (file_deleter)
     {
         file_deleter->requestInterruption();
@@ -185,6 +188,17 @@ void MainWindow::deinit_all()
         file_deleter->deleteLater();
         file_deleter = Q_NULLPTR;
     }
+}
+
+void MainWindow::deinit_all()
+{
+    qDebug() << Q_FUNC_INFO << " begin";
+
+    blinker.stop ();
+    disconnect(&blinker );
+    deinitLoggers();
+    deinitMonitor();
+    deinitFileDeleter();
 
     deinitUART   ();
     //appLog::write(2,QString(Q_FUNC_INFO));
@@ -253,8 +267,8 @@ void MainWindow::onCamSwitch(quint8 camId)
         qDebug() << str;
         appLog::write(6, str);
 
-        m_camWindow.setWindowTitle(clogger->get_name());
-        cam_monitor->startMonitoring(&m_camWindow, clogger->get_mrl());
+        m_camWindow->setWindowTitle(clogger->get_name());
+        cam_monitor->startMonitoring(m_camWindow, clogger->get_mrl());
         str = QString("Wait data from %1").arg(clogger->get_name());
         label->setText(str);
     }
@@ -263,9 +277,12 @@ void MainWindow::onCamSwitch(quint8 camId)
 
 
 
-void MainWindow::start_cam_monitor()
+void MainWindow::startCamMonitor()
 {
-    appLog::write(2, "start_cam_monitor next must be start_cam_switch");
+    appLog::write(2, "start_cam_monitor ");
+    m_camWindow = new QOpenGLWidget;
+    //m_camWindow = new QWidget;
+
     cam_monitor = new cam_logger_vlc({-1, "Monitor logger", ""});
     connect(cam_monitor, &cam_logger_vlc::onPlayStart, this, &MainWindow::onStartMon);
     connect(cam_monitor, &cam_logger_vlc::onPlayStop, this, &MainWindow::onStopMon);
@@ -289,11 +306,11 @@ void MainWindow::onStartMon()
     label->setText(str);
     FrameNo->setText("-");
 #if defined DESKTOP_DEBUG_BUILD
-    m_camWindow.show();
+    m_camWindow->show();
 #else
-    m_camWindow.showFullScreen();
+    m_camWindow->showFullScreen();
 #endif
-    m_camWindow.activateWindow();
+    m_camWindow->activateWindow();
 
 }
 
@@ -303,22 +320,22 @@ void MainWindow::onStopMon()
     QString str = QString("%1 lost connection").arg(clogger->get_name());
     appLog::write(6, str);
     label->setText(str);
-    m_camWindow.hide();
+    m_camWindow->hide();
 }
 
 void MainWindow::onMonitorError()
 {
     const cam_logger_vlc* clogger = loggers.at(appState.camId);
 
-    bool monWidgetVisible = m_camWindow.isVisible();
+    bool monWidgetVisible = m_camWindow->isVisible();
 
     if (monWidgetVisible)
     {
         QString str = QString("Camera %1 not respond").arg(clogger->get_name());
         appLog::write(0, str);
-        m_camWindow.hide();
+        m_camWindow->hide();
     }
-    cam_monitor->startMonitoring(&m_camWindow, clogger->get_mrl());
+    cam_monitor->startMonitoring(m_camWindow, clogger->get_mrl());
 }
 
 void MainWindow::start_loggers()
