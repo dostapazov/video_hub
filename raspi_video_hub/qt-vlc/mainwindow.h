@@ -112,6 +112,7 @@ private:
 
     void deinitMonitor();
     void deinitFileDeleter();
+    void activateSelf();
 };
 
 #ifndef DESKTOP_DEBUG_BUILD

@@ -320,20 +320,30 @@ void MainWindow::onStopMon()
     QString str = QString("%1 lost connection").arg(clogger->get_name());
     appLog::write(6, str);
     label->setText(str);
+    activateSelf();
+
+}
+
+void MainWindow::activateSelf()
+{
+
+#if defined DESKTOP_DEBUG_BUILD
+    show();
+#else
+    showFullScreen();
+# endif
+    activateWindow();
     m_camWindow->hide();
 }
 
 void MainWindow::onMonitorError()
 {
     const cam_logger_vlc* clogger = loggers.at(appState.camId);
-
-    bool monWidgetVisible = m_camWindow->isVisible();
-
-    if (monWidgetVisible)
+    if (m_camWindow->isVisible())
     {
         QString str = QString("Camera %1 not respond").arg(clogger->get_name());
         appLog::write(0, str);
-        m_camWindow->hide();
+        activateSelf();
     }
     cam_monitor->startMonitoring(m_camWindow, clogger->get_mrl());
 }

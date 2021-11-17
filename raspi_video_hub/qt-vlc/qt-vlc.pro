@@ -31,8 +31,10 @@ win32:{
 
 unix:{
 LIBS += -lvlc
-#LIBS += -lwiringPi
 LIBS += -L/usr/X11/lib -lX11
+ CONFIG(release , debug | release) : {
+	LIBS += -lwiringPi
+ }
 }
 
 SOURCES += recorder_main.cpp\
