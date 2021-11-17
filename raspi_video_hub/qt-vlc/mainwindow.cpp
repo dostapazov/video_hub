@@ -343,7 +343,7 @@ void MainWindow::onMonitorError()
     {
         QString str = QString("Camera %1 not respond").arg(clogger->get_name());
         appLog::write(0, str);
-        activateSelf();
+        onStopMon();
     }
     cam_monitor->startMonitoring(m_camWindow, clogger->get_mrl());
 }

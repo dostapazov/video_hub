@@ -353,11 +353,7 @@ void cam_logger_vlc::startPlayWatchDog()
     if (playWatchdog.isActive())
         playWatchdog.stop();
     playWatchdog.setSingleShot(true);
-#ifdef DESKTOP_DEBUG_BUILD
     playWatchdog.setInterval(PLAY_WATCHDOG_TIMEOUT);
-#else
-    playWatchdog.setInterval(3 * PLAY_WATCHDOG_TIMEOUT);
-#endif
     playWatchdog.start();
 }
 

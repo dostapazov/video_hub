@@ -32,8 +32,11 @@ win32:{
 unix:{
 LIBS += -lvlc
 LIBS += -L/usr/X11/lib -lX11
- CONFIG(release , debug | release) : {
-	LIBS += -lwiringPi
+
+!contains(DEFINES,DESKTOP_DEBUG_BUILD) :{
+	CONFIG(release , debug | release) : {
+		LIBS += -lwiringPi
+	}
  }
 }
 
