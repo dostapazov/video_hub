@@ -13,13 +13,13 @@ typedef struct
     quint8  devId;
     quint8  pckType;
     quint8 size;
-}PCK_Header_t;
+} PCK_Header_t;
 
 
 typedef struct
 {
     quint8 camId;
-}PCK_CAM_t;
+} PCK_CAM_t;
 
 
 typedef struct
@@ -27,7 +27,7 @@ typedef struct
     quint8   camId;
     quint8   fanState;
     quint16  temper; //x1000 celsius degrees
-}PCK_STATE_t;
+} PCK_STATE_t;
 
 typedef struct
 {
@@ -37,7 +37,7 @@ typedef struct
     uint8_t     day;
     uint8_t     mounth;
     uint8_t     year;
-}PCK_DateTime_t;
+} PCK_DateTime_t;
 
 #pragma pack()
 
@@ -51,7 +51,8 @@ enum PCK_Type
     PCT_UPDATE_EXECUTALE
 };
 
-
+constexpr int EMPTY_PACKET_SIZE = (sizeof(PCK_Header_t) + sizeof(quint32));
+inline int packetSize(const PCK_Header_t* hdr) {return  EMPTY_PACKET_SIZE + hdr->size;}
 QByteArray makePck(quint8 type, QByteArray data);
 
 

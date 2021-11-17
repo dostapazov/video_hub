@@ -42,7 +42,10 @@ Q_SIGNALS:
 private slots:
 
     void onUARTread();
-    void onParse();
+    void parseReceive();
+    const PCK_Header_t* hasPacket();
+    const PCK_Header_t* checkCompletePacket();
+    void removePacket();
 
     void on_blink();
     void onCamSwitch(quint8 camId);
