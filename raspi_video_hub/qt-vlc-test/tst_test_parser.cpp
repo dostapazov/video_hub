@@ -51,6 +51,7 @@ test_parser::~test_parser()
 void test_parser::initTestCase()
 {
     cut.setDevId(DEV_ID);
+    cut.setPacketSignature(RP_SIGNATURE_);
 }
 
 void test_parser::cleanupTestCase()
@@ -75,7 +76,6 @@ void test_parser::IncompleteFrameMustStayInBuffer()
 {
     QByteArray packet = makePck(1, DEV_ID, QByteArray("abcdef"));
     QByteArray half = packet.left(packet.size() / 2);
-
     cut.handleRecv(half);
     QCOMPARE(cut.bufferSize(), half.size());
 }

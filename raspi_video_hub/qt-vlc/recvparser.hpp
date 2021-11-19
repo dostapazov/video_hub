@@ -48,11 +48,12 @@ inline quint8 RecvParser::getDevId()
     return m_devId;
 }
 
-void RecvParser::setPacketSignature(quint8 sign)
+inline void RecvParser::setPacketSignature(quint8 sign)
 {
     m_signature = sign;
 }
-quint8 RecvParser::getPacketSignature()
+
+inline quint8 RecvParser::getPacketSignature()
 {
     return m_signature;
 }
