@@ -14,6 +14,9 @@ public:
     void setIoDevice(QIODevice* io);
     void setDevId(quint8 devId);
     quint8 getDevId();
+    void setPacketSignature(quint8 sign);
+    quint8 getPacketSignature();
+
     int  bufferSize() {return m_buffer.size();}
 
 
@@ -30,6 +33,7 @@ private:
     QIODevice* m_io = nullptr;
     QByteArray m_buffer;
     quint8 m_devId = 0;
+    quint8 m_signature = CU_SIGNATURE_;
 
 };
 
@@ -43,6 +47,16 @@ inline quint8 RecvParser::getDevId()
 {
     return m_devId;
 }
+
+void RecvParser::setPacketSignature(quint8 sign)
+{
+    m_signature = sign;
+}
+quint8 RecvParser::getPacketSignature()
+{
+    return m_signature;
+}
+
 
 
 #endif // RECVPARSER_HPP

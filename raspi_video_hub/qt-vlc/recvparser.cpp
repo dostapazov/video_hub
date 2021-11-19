@@ -44,7 +44,7 @@ void  RecvParser::handleRecv(const QByteArray& rxData)
 
 const PCK_Header_t* RecvParser::hasPacket()
 {
-    int index = m_buffer.indexOf(CU_SIGNATURE_);
+    int index = m_buffer.indexOf(m_signature);
     if (index)
     {
         if (index > 0)

@@ -26,12 +26,14 @@ public:
     ~test_parser();
 private:
     TestedRecvParser cut;
+    static constexpr quint8 DEV_ID = 7;
 
 private slots:
     void initTestCase();
     void cleanupTestCase();
     void EmptyIncomingDataShouldNoEmitSignals();
     void InvalidIncomingDataShouldNoEmitSignals();
+    void IncompleteFrameMustStayInBuffer();
 
 };
 
@@ -48,7 +50,7 @@ test_parser::~test_parser()
 
 void test_parser::initTestCase()
 {
-    cut.setDevId(7);
+    cut.setDevId(DEV_ID);
 }
 
 void test_parser::cleanupTestCase()
@@ -68,6 +70,16 @@ void test_parser::InvalidIncomingDataShouldNoEmitSignals()
     cut.handleRecv(QByteArray("abcdef"));
     QCOMPARE(cut.bufferSize(), 0);
 }
+
+void test_parser::IncompleteFrameMustStayInBuffer()
+{
+    QByteArray packet = makePck(1, DEV_ID, QByteArray("abcdef"));
+    QByteArray half = packet.left(packet.size() / 2);
+
+    cut.handleRecv(half);
+    QCOMPARE(cut.bufferSize(), half.size());
+}
+
 
 QTEST_APPLESS_MAIN(test_parser)
 
