@@ -23,3 +23,16 @@ QByteArray makePck(quint8 type, quint8 devId, QByteArray data)
 
     return res;
 }
+
+bool checkCRC(const QByteArray& packet)
+{
+    if (packet.size() < EMPTY_PACKET_SIZE)
+        return false;
+
+    const PCK_Header_t* hdr = reinterpret_cast<const PCK_Header_t*>(packet.data());
+    if (packet.size() < packetSize(hdr))
+        return false;
+
+    const quint32* pcrc = reinterpret_cast<const quint32*>(packet.constData() + hdr->size + sizeof(*hdr));
+    return crc32(packet, 0, sizeof(*hdr) + hdr->size) == pcrc[0];
+}
