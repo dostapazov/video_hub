@@ -43,9 +43,9 @@ private slots:
 
     void onUARTread();
     void parseReceive();
-    const PCK_Header_t* hasPacket();
-    const PCK_Header_t* checkCompletePacket();
-    void removePacket();
+
+
+
 
     void on_blink();
     void onCamSwitch(quint8 camId);
@@ -81,6 +81,7 @@ private:
     void handle_uart_packet(PCK_Header_t& header, int offset);
     void setSystemDateTime(QDateTime dt);
 
+    quint8 devId;
     QString m_vlog_root  ;
 
 

@@ -8,7 +8,6 @@ void MainWindow::init_uart()
 {
     char b[] = {1, 2, 3, CU_SIGNATURE_, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
     rxBuf.append(b);
-    hasPacket();
 
     QString  uartDevName = appConfig::get_uart_device();
     uint32_t uartBaud    = appConfig::get_uart_speed ();
@@ -59,105 +58,8 @@ void MainWindow::onUARTread()
 }
 
 
-const PCK_Header_t* MainWindow::checkCompletePacket()
-{
-    if (rxBuf.size() <  EMPTY_PACKET_SIZE)
-        return nullptr;
-    const PCK_Header_t* hdr = reinterpret_cast<const PCK_Header_t*>(rxBuf.constData());
-
-    if (rxBuf.size() < packetSize(hdr))
-        return nullptr;
-    return hdr;
-}
-
-const PCK_Header_t* MainWindow::hasPacket()
-{
-    int index = rxBuf.indexOf(CU_SIGNATURE_);
-    if (index)
-    {
-        if (index)
-            rxBuf.remove(0, index);
-        else
-            rxBuf.clear();
-    }
-
-    return  checkCompletePacket();
-}
-
-void MainWindow::removePacket()
-{
-    const PCK_Header_t* packet = checkCompletePacket();
-    if (packet)
-        rxBuf.remove(0, packetSize(packet));
-}
 
 
-
-void MainWindow::parseReceive()
-{
-
-    quint16 offset = 0;
-    PCK_Header_t header;
-    quint32 crc = 0;
-    const PCK_Header_t* hdr;
-
-    while ( (hdr = hasPacket()) )
-    {
-
-
-        if ((crc == pcrc) || 1)
-        {
-            if (header.devId == appConfig::value("DEV/ID").toUInt())
-            {
-                switch (header.pckType)
-                {
-                    case PCT_SHUTDOWN:
-                    {
-                        close();
-                        break;
-                    }
-                    case PCT_CAM_SWITCH:
-                    {
-                        quint8 id = 0;
-                        if (header.size == sizeof(id))
-                        {
-                            id = (quint8)rxBuf.at(offset);
-                            if (id)
-                                emit cam_switch(id - 1);
-                        }
-
-                        break;
-                    }
-                    case PCT_STATE:
-                    {
-                        if (header.size == 0)
-                            uart->write(makePck(PCT_STATE, QByteArray((char*)&appState, sizeof(appState))));
-                        break;
-                    }
-                    case PCT_DATETIME:
-                    {
-                        if (header.size == sizeof(PCK_DateTime_t))
-                        {
-                            PCK_DateTime_t* pl = (PCK_DateTime_t*)&rxBuf.data()[offset];
-                            QDateTime dt;
-                            dt.setDate(QDate(pl->year + 2000, pl->mounth, pl->day));
-                            dt.setTime(QTime(pl->hour, pl->min, pl->sec));
-                            setSystemDateTime(dt);
-                        }
-                        break;
-                    }
-                    default :
-                        appLog::write(5, tr("UART unknownd packet type %1").arg(int(header.pckType)));
-                        break;
-                }
-            }
-            else
-                appLog::write(5, tr("UART different devId [self %1] packet %2 type %3 size %4").arg(appConfig::value("DEV/ID").toUInt()).arg(int(header.devId)).arg(int(header.pckType)).arg(int(header.devId)).arg(int(header.size)));
-
-        }
-        removePacket();
-    }
-}
 
 void MainWindow::setSystemDateTime(QDateTime dt)
 {
@@ -168,8 +70,7 @@ void MainWindow::setSystemDateTime(QDateTime dt)
 }
 
 
-/*
-void MainWindow::onParse()
+void MainWindow::parseReceive()
 {
     constexpr int EMPTY_PACKET_SIZE = (sizeof(PCK_Header_t) + sizeof(quint32));
     quint16 offset = 0;
@@ -177,89 +78,89 @@ void MainWindow::onParse()
     quint32 crc = 0;
     bool hasPck = (rxBuf.count() > EMPTY_PACKET_SIZE);
 
-while (hasPck)
-{
-  while ((CU_SIGNATURE_ != rxBuf[offset]) && (offset < rxBuf.count()))
-    offset++;
-
-  rxBuf.remove(0, offset);
-
-  hasPck = false;
-
-  if (rxBuf.count() >= EMPTY_PACKET_SIZE)
-  {
-    memcpy(&header, rxBuf.constData(), sizeof(header));
-    offset = sizeof(header);
-
-    if (rxBuf.count() >= (offset + EMPTY_PACKET_SIZE))
+    while (hasPck)
     {
-      quint32 pcrc = 0;
-      crc = crc32(rxBuf, 0, header.size + offset);
-      memcpy(&pcrc, rxBuf.constData() + offset + header.size, sizeof(pcrc));
+        while ((CU_SIGNATURE_ != rxBuf[offset]) && (offset < rxBuf.count()))
+            offset++;
 
-      if ((crc == pcrc) || 1)
-      {
-        if (header.devId == appConfig::value("DEV/ID").toUInt())
+        rxBuf.remove(0, offset);
+
+        hasPck = false;
+
+        if (rxBuf.count() >= EMPTY_PACKET_SIZE)
         {
-          switch (header.pckType)
-          {
-            case PCT_SHUTDOWN:
-            {
-              close();
-              break;
-            }
-            case PCT_CAM_SWITCH:
-            {
-              quint8 id = 0;
-              if (header.size == sizeof(id))
-              {
-                id = (quint8)rxBuf.at(offset);
-                if (id)
-                  emit cam_switch(id - 1);
-              }
+            memcpy(&header, rxBuf.constData(), sizeof(header));
+            offset = sizeof(header);
 
-              break;
-            }
-            case PCT_STATE:
+            if (rxBuf.count() >= (offset + EMPTY_PACKET_SIZE))
             {
-              if (header.size == 0)
-                uart->write(makePck(PCT_STATE, QByteArray((char*)&appState, sizeof(appState))));
-              break;
+                quint32 pcrc = 0;
+                crc = crc32(rxBuf, 0, header.size + offset);
+                memcpy(&pcrc, rxBuf.constData() + offset + header.size, sizeof(pcrc));
+
+                if ((crc == pcrc) || 1)
+                {
+                    if (header.devId == devId)
+                    {
+                        switch (header.pckType)
+                        {
+                            case PCT_SHUTDOWN:
+                            {
+                                close();
+                                break;
+                            }
+                            case PCT_CAM_SWITCH:
+                            {
+                                quint8 id = 0;
+                                if (header.size == sizeof(id))
+                                {
+                                    id = (quint8)rxBuf.at(offset);
+                                    if (id)
+                                        emit cam_switch(id - 1);
+                                }
+
+                                break;
+                            }
+                            case PCT_STATE:
+                            {
+                                if (header.size == 0)
+                                    uart->write(makePck(PCT_STATE, devId, QByteArray((char*)&appState, sizeof(appState))));
+                                break;
+                            }
+                            case PCT_DATETIME:
+                            {
+                                if (header.size == sizeof(PCK_DateTime_t))
+                                {
+                                    PCK_DateTime_t* pl = (PCK_DateTime_t*)&rxBuf.data()[offset];
+                                    QDateTime dt;
+                                    dt.setDate(QDate(pl->year + 2000, pl->mounth, pl->day));
+                                    dt.setTime(QTime(pl->hour, pl->min, pl->sec));
+                                    setSystemDateTime(dt);
+                                }
+                                break;
+                            }
+                            default :
+                                appLog::write(5, tr("UART unknownd packet type %1").arg(int(header.pckType)));
+                                break;
+                        }
+                    }
+                    else
+                        appLog::write(5, tr("UART different devId [self %1] packet %2 type %3 size %4").arg(appConfig::value("DEV/ID").toUInt()).arg(int(header.devId)).arg(int(header.pckType)).arg(int(header.devId)).arg(int(header.size)));
+
+                    offset += header.size + sizeof(crc);
+                }
+                else
+                {
+                    offset = 1;
+                    appLog::write(5, "UART error crc");
+                }
+
+                rxBuf.remove(0, offset);
+                hasPck = (rxBuf.count() > EMPTY_PACKET_SIZE);
             }
-            case PCT_DATETIME:
-            {
-              if (header.size == sizeof(PCK_DateTime_t))
-              {
-                PCK_DateTime_t* pl = (PCK_DateTime_t*)&rxBuf.data()[offset];
-                QDateTime dt;
-                dt.setDate(QDate(pl->year + 2000, pl->mounth, pl->day));
-                dt.setTime(QTime(pl->hour, pl->min, pl->sec));
-                setSystemDateTime(dt);
-              }
-              break;
-            }
-            default :
-              appLog::write(5, tr("UART unknownd packet type %1").arg(int(header.pckType)));
-              break;
-          }
         }
-        else
-          appLog::write(5, tr("UART different devId [self %1] packet %2 type %3 size %4").arg(appConfig::value("DEV/ID").toUInt()).arg(int(header.devId)).arg(int(header.pckType)).arg(int(header.devId)).arg(int(header.size)));
-
-        offset += header.size + sizeof(crc);
-      }
-      else
-      {
-        offset = 1;
-        appLog::write(5, "UART error crc");
-      }
-
-      rxBuf.remove(0, offset);
-      hasPck = (rxBuf.count() > EMPTY_PACKET_SIZE);
     }
-  }
-}
 }
 
- */
+
 

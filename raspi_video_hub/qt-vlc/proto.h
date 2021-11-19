@@ -53,7 +53,7 @@ enum PCK_Type
 
 constexpr int EMPTY_PACKET_SIZE = (sizeof(PCK_Header_t) + sizeof(quint32));
 inline int packetSize(const PCK_Header_t* hdr) {return  EMPTY_PACKET_SIZE + hdr->size;}
-QByteArray makePck(quint8 type, QByteArray data);
+QByteArray makePck(quint8 type, quint8 devId, QByteArray data);
 
 
 #endif // PROTO_H

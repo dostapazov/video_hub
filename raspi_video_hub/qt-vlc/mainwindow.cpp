@@ -44,6 +44,7 @@ MainWindow::MainWindow(QWidget* parent) :
 {
     setupUi(this);
     appState = PCK_STATE_t {0xFF, 77, 777};
+    devId = appConfig::get_devid();
     connect(this, &MainWindow::cam_switch, this, &MainWindow::onCamSwitch, Qt::ConnectionType::QueuedConnection);
     init_gpio  ();
     initBlinker();
