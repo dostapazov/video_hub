@@ -1,10 +1,20 @@
 #include "recvparser.hpp"
 
 
+
 RecvParser::RecvParser(QObject* parent)
     : QObject{parent}
 {
+    using pair = std::pair<quint8, packet_handler_f>;
+    namespace p = std::placeholders;
 
+
+    m_handlers = PacketHandlers(
+    {
+        pair(PCT_SHUTDOWN, std::bind(&RecvParser::onShutdown, this, p::_1)),
+        pair(PCT_CAM_SWITCH, std::bind(&RecvParser::onCamSwitch, this, p::_1))
+    }
+    );
 }
 
 void RecvParser::setIoDevice(QIODevice* io)
@@ -32,11 +42,16 @@ void RecvParser::readyRead()
 void  RecvParser::handleRecv(const QByteArray& rxData)
 {
     m_buffer.append(rxData);
-    while (hasPacket())
+    const PCK_Header_t* hdr;
+    while ( (hdr = hasPacket()))
     {
-        const PCK_Header_t* hdr = hasPacket();
-
-
+        if (checkCRC(m_buffer) && hdr)
+        {
+            auto handler = m_handlers.find(hdr->pckType);
+            if (handler != m_handlers.end())
+                handler.value()(hdr);
+        }
+        m_buffer.remove(0, packetSize(hdr));
 
     }
 }
@@ -74,5 +89,20 @@ void RecvParser::removePacket()
     if (packet)
         m_buffer.remove(0, packetSize(packet));
 }
+
+void RecvParser::onCamSwitch(const PCK_Header_t* hdr)
+{
+    if (hdr->size)
+    {
+        const quint8* cam_id = reinterpret_cast<const quint8*>(hdr) + sizeof(*hdr);
+        emit camSwitch(cam_id[0]);
+    }
+}
+
+void RecvParser::onShutdown(const PCK_Header_t* hdr)
+{
+
+}
+
 
 

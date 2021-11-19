@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QIODevice>
+#include <QMap>
 #include "proto.h"
 
 
@@ -22,6 +23,7 @@ public:
 
 signals:
     void camSwitch(quint8);
+    void shutdown();
 protected:
     void  handleRecv(const QByteArray& rxData);
     const PCK_Header_t* hasPacket();
@@ -30,10 +32,18 @@ protected:
 private slots:
     void readyRead();
 private:
+    void onCamSwitch(const PCK_Header_t* hdr);
+    void onShutdown(const PCK_Header_t* hdr);
+
+
     QIODevice* m_io = nullptr;
     QByteArray m_buffer;
     quint8 m_devId = 0;
     quint8 m_signature = CU_SIGNATURE_;
+    using  packet_handler_f = std::function<void(const PCK_Header_t*)>;
+    using  PacketHandlers = QMap<quint8, packet_handler_f>;
+    PacketHandlers m_handlers;
+
 
 };
 

@@ -3,8 +3,9 @@
 
 // add necessary includes here
 
-quint32 crc32(QByteArray data, quint64 start, quint64 len )
+quint32 crc32(QByteArray, quint64, quint64  )
 {
+
     return quint32(0xFEED0CBC);
 }
 
@@ -34,7 +35,8 @@ private slots:
     void EmptyIncomingDataShouldNoEmitSignals();
     void InvalidIncomingDataShouldNoEmitSignals();
     void IncompleteFrameMustStayInBuffer();
-
+    void NotConsistentPrefixIncompleteFrameMustStayInBufferOnlyValidPart();
+    void CamSwitchShouldEmitEvent();
 };
 
 test_parser::test_parser()
@@ -80,6 +82,24 @@ void test_parser::IncompleteFrameMustStayInBuffer()
     QCOMPARE(cut.bufferSize(), half.size());
 }
 
+void test_parser::NotConsistentPrefixIncompleteFrameMustStayInBufferOnlyValidPart()
+{
+    QByteArray packet = makePck(1, DEV_ID, QByteArray("abcdef"));
+    QByteArray half = packet.left(packet.size() / 2);
+    cut.handleRecv(QByteArray("abcdef") + half);
+    QCOMPARE(cut.bufferSize(), half.size());
+}
+
+void test_parser::CamSwitchShouldEmitEvent()
+{
+    QSignalSpy spy(&cut, &RecvParser::camSwitch);
+    QByteArray packet = makePck(PCT_CAM_SWITCH, DEV_ID, QByteArray("\x01"));
+    cut.handleRecv(packet);
+    QCOMPARE(cut.bufferSize(), 0);
+    QCOMPARE(spy.count(), 1);
+    QList<QVariant> args = spy.takeFirst();
+    QCOMPARE(args.takeAt(0).toUInt(), 1);
+}
 
 QTEST_APPLESS_MAIN(test_parser)
 
