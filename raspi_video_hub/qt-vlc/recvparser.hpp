@@ -23,7 +23,10 @@ public:
 
 signals:
     void camSwitch(quint8);
-    void shutdown();
+    void shutDown();
+    void appState();
+    void setDateTime(QDateTime);
+    void updateExecutable();
 protected:
     void  handleRecv(const QByteArray& rxData);
     const PCK_Header_t* hasPacket();
@@ -34,6 +37,10 @@ private slots:
 private:
     void onCamSwitch(const PCK_Header_t* hdr);
     void onShutdown(const PCK_Header_t* hdr);
+    void onAppState(const PCK_Header_t* hdr);
+    void onSetDateTime(const PCK_Header_t* hdr);
+    void onUpdateExecutable(const PCK_Header_t* hdr);
+    static QDateTime fromPacket(const PCK_DateTime_t* src);
 
 
     QIODevice* m_io = nullptr;

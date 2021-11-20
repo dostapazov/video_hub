@@ -6,7 +6,18 @@
 #define CU_SIGNATURE_  0x5a
 #define RP_SIGNATURE_  0xa5
 
-#pragma pack(1)
+enum PCK_Type
+{
+    PCT_SHUTDOWN = 0,
+    PCT_CAM_SWITCH,
+    PCT_DATETIME,
+    PCT_STATE,
+    PCT_UPDATE_EXECUTALE
+};
+
+
+#pragma pack(push,1)
+
 typedef struct
 {
     quint8  signture;
@@ -31,25 +42,16 @@ typedef struct
 
 typedef struct
 {
-    uint8_t     sec;
-    uint8_t     min;
-    uint8_t     hour;
-    uint8_t     day;
-    uint8_t     mounth;
-    uint8_t     year;
+    quint8     sec;
+    quint8     min;
+    quint8     hour;
+    quint8     day;
+    quint8     mounth;
+    quint8     year;
 } PCK_DateTime_t;
 
-#pragma pack()
+#pragma pack(pop)
 
-
-enum PCK_Type
-{
-    PCT_SHUTDOWN = 0,
-    PCT_CAM_SWITCH,
-    PCT_DATETIME,
-    PCT_STATE,
-    PCT_UPDATE_EXECUTALE
-};
 
 constexpr int EMPTY_PACKET_SIZE = (sizeof(PCK_Header_t) + sizeof(quint32));
 inline int packetSize(const PCK_Header_t* hdr) {return  EMPTY_PACKET_SIZE + hdr->size;}

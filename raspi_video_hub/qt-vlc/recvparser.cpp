@@ -8,53 +8,60 @@ RecvParser::RecvParser(QObject* parent)
     using pair = std::pair<quint8, packet_handler_f>;
     namespace p = std::placeholders;
 
-
     m_handlers = PacketHandlers(
     {
         pair(PCT_SHUTDOWN, std::bind(&RecvParser::onShutdown, this, p::_1)),
-        pair(PCT_CAM_SWITCH, std::bind(&RecvParser::onCamSwitch, this, p::_1))
+        pair(PCT_CAM_SWITCH, std::bind(&RecvParser::onCamSwitch, this, p::_1)),
+        pair(PCT_DATETIME, std::bind(&RecvParser::onSetDateTime, this, p::_1)),
+        pair(PCT_STATE, std::bind(&RecvParser::onAppState, this, p::_1)),
+        pair(PCT_UPDATE_EXECUTALE, std::bind(&RecvParser::onUpdateExecutable, this, p::_1))
     }
     );
 }
 
 void RecvParser::setIoDevice(QIODevice* io)
 {
-    if (m_io)
-        m_io->disconnect(this);
-    m_io = io;
-
-    m_buffer.clear();
-
-    if (!m_io)
+    if (io == m_io)
         return;
 
-    connect(m_io, &QIODevice::readyRead, this, &RecvParser::readyRead);
+    if (m_io)
+        m_io->disconnect(this);
 
+    m_buffer.clear();
+    m_io = io;
+
+    if (m_io)
+        connect(m_io, &QIODevice::readyRead, this, &RecvParser::readyRead);
 }
 
 void RecvParser::readyRead()
 {
-    if (!m_io)
-        return;
-    handleRecv(m_io->readAll());
+    while (m_io && m_io->bytesAvailable())
+        handleRecv(m_io->readAll());
 }
 
 void  RecvParser::handleRecv(const QByteArray& rxData)
 {
     m_buffer.append(rxData);
     const PCK_Header_t* hdr;
-    while ( (hdr = hasPacket()))
+    while ((hdr = hasPacket()))
     {
-        if (checkCRC(m_buffer) && hdr)
+        if (checkCRC(m_buffer))
         {
-            auto handler = m_handlers.find(hdr->pckType);
-            if (handler != m_handlers.end())
-                handler.value()(hdr);
-        }
-        m_buffer.remove(0, packetSize(hdr));
+            if (hdr->devId == getDevId())
+            {
+                auto handler = m_handlers.find(hdr->pckType);
+                if (handler != m_handlers.end())
+                    handler.value()(hdr);
 
+            }
+            m_buffer.remove(0, packetSize(hdr));
+        }
+        else
+            m_buffer.data()[0] = ~m_signature;
     }
 }
+
 
 
 const PCK_Header_t* RecvParser::hasPacket()
@@ -68,7 +75,8 @@ const PCK_Header_t* RecvParser::hasPacket()
             m_buffer.clear();
     }
 
-    return  checkCompletePacket();
+    const PCK_Header_t* hdr =  checkCompletePacket();
+    return hdr;
 }
 
 const PCK_Header_t* RecvParser::checkCompletePacket()
@@ -79,9 +87,9 @@ const PCK_Header_t* RecvParser::checkCompletePacket()
 
     if (m_buffer.size() < packetSize(hdr))
         return nullptr;
+
     return hdr;
 }
-
 
 void RecvParser::removePacket()
 {
@@ -92,7 +100,7 @@ void RecvParser::removePacket()
 
 void RecvParser::onCamSwitch(const PCK_Header_t* hdr)
 {
-    if (hdr->size)
+    if (hdr->size == sizeof (quint8))
     {
         const quint8* cam_id = reinterpret_cast<const quint8*>(hdr) + sizeof(*hdr);
         emit camSwitch(cam_id[0]);
@@ -101,8 +109,38 @@ void RecvParser::onCamSwitch(const PCK_Header_t* hdr)
 
 void RecvParser::onShutdown(const PCK_Header_t* hdr)
 {
-
+    if (!hdr->size)
+        emit shutDown();
 }
 
+void RecvParser::onAppState(const PCK_Header_t* hdr)
+{
+    if (!hdr->size)
+        emit appState();
+}
 
+QDateTime RecvParser::fromPacket(const PCK_DateTime_t* src)
+{
+    QDateTime dtm(
+        QDate(src->year + 2000, src->mounth, src->day),
+        QTime(src->hour, src->min, src->sec)
+    );
+    return dtm;
+}
+
+void RecvParser::onSetDateTime(const PCK_Header_t* hdr)
+{
+    const char* ptr = reinterpret_cast<const char*>(hdr);
+    const PCK_DateTime_t* dtm = reinterpret_cast<const PCK_DateTime_t*>(ptr + sizeof (*hdr));
+    if (hdr->size == sizeof (*dtm))
+    {
+        emit setDateTime(fromPacket(dtm));
+    }
+}
+
+void RecvParser::onUpdateExecutable(const PCK_Header_t* hdr)
+{
+    if (!hdr->size)
+        emit updateExecutable();
+}
 

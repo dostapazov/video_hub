@@ -37,11 +37,19 @@ private slots:
     void IncompleteFrameMustStayInBuffer();
     void NotConsistentPrefixIncompleteFrameMustStayInBufferOnlyValidPart();
     void CamSwitchShouldEmitEvent();
+    void CamSwitchShouldSilenceWhenWrongDataSize();
+    void AppStateShouldEmitEvent();
+    void AppStateShouldSilenceWhenWrongDataSize();
+    void UpdateExucutableShouldEmitEvent();
+    void UpdateExucutableShouldSilenceWhenWrongDataSize();
+    void DateTimeShouldEmitEvent();
+    void DateTimeShouldSilenceWhenWrongDataSize();
+    void ParserShouldSilenceWhenWrongDevId();
+    void ParserSholdFilterGarbageData();
 };
 
 test_parser::test_parser()
 {
-
 
 }
 
@@ -100,6 +108,125 @@ void test_parser::CamSwitchShouldEmitEvent()
     QList<QVariant> args = spy.takeFirst();
     QCOMPARE(args.takeAt(0).toUInt(), 1);
 }
+
+void test_parser::CamSwitchShouldSilenceWhenWrongDataSize()
+{
+    QSignalSpy spy(&cut, &RecvParser::camSwitch);
+    QByteArray packet = makePck(PCT_CAM_SWITCH, DEV_ID, QByteArray("\x01\x2"));
+    cut.handleRecv(packet);
+    QCOMPARE(cut.bufferSize(), 0);
+    QCOMPARE(spy.count(), 0);
+}
+
+void test_parser::ParserShouldSilenceWhenWrongDevId()
+{
+    QSignalSpy spy(&cut, &RecvParser::camSwitch);
+    QByteArray packet = makePck(PCT_CAM_SWITCH, DEV_ID + 1, QByteArray("\x01"));
+    cut.handleRecv(packet);
+    QCOMPARE(cut.bufferSize(), 0);
+    QCOMPARE(spy.count(), 0);
+}
+
+void test_parser::AppStateShouldEmitEvent()
+{
+    QSignalSpy spy(&cut, &RecvParser::appState);
+    QByteArray packet = makePck(PCT_STATE, DEV_ID, QByteArray());
+    cut.handleRecv(packet);
+    QCOMPARE(cut.bufferSize(), 0);
+    QCOMPARE(spy.count(), 1);
+
+}
+
+void test_parser::AppStateShouldSilenceWhenWrongDataSize()
+{
+    QSignalSpy spy(&cut, &RecvParser::appState);
+    QByteArray packet = makePck(PCT_STATE, DEV_ID, QByteArray("\x01"));
+    cut.handleRecv(packet);
+    QCOMPARE(cut.bufferSize(), 0);
+    QCOMPARE(spy.count(), 0);
+
+}
+
+void test_parser::UpdateExucutableShouldEmitEvent()
+{
+    QSignalSpy spy(&cut, &RecvParser::updateExecutable);
+    QByteArray packet = makePck(PCT_UPDATE_EXECUTALE, DEV_ID, QByteArray());
+    cut.handleRecv(packet);
+    QCOMPARE(cut.bufferSize(), 0);
+    QCOMPARE(spy.count(), 1);
+}
+
+void test_parser::UpdateExucutableShouldSilenceWhenWrongDataSize()
+{
+    QSignalSpy spy(&cut, &RecvParser::updateExecutable);
+    QByteArray packet = makePck(PCT_UPDATE_EXECUTALE, DEV_ID, QByteArray("abcde"));
+    cut.handleRecv(packet);
+    QCOMPARE(cut.bufferSize(), 0);
+    QCOMPARE(spy.count(), 0);
+}
+
+void fromQDateTime(const QDateTime& src, PCK_DateTime_t& dtm)
+{
+    dtm.day = src.date().day();
+    dtm.mounth = src.date().month();
+    dtm.year = src.date().year() - 2000;
+    dtm.hour = src.time().hour();
+    dtm.min = src.time().minute();
+    dtm.sec = src.time().second();
+}
+
+void test_parser::DateTimeShouldEmitEvent()
+{
+    QSignalSpy spy(&cut, &RecvParser::setDateTime);
+    // setyp date time
+    QByteArray data(sizeof (PCK_DateTime_t), Qt::Uninitialized);
+    PCK_DateTime_t* dtm = reinterpret_cast<PCK_DateTime_t*>(data.data());
+    QDateTime now = QDateTime::currentDateTime();
+
+    // remove msecs because PCK_DateTime_t have't it
+    now.setTime(now.time().addMSecs(-now.time().msec()));
+
+    fromQDateTime(now, *dtm);
+    QByteArray packet = makePck(PCT_DATETIME, DEV_ID, data);
+
+    cut.handleRecv(packet);
+    QCOMPARE(cut.bufferSize(), 0);
+    QCOMPARE(spy.count(), 1);
+    QList<QVariant> args = spy.takeFirst();
+    QCOMPARE(args.count(), 1);
+    QCOMPARE(args.takeFirst().toDateTime(), now);
+
+}
+
+void test_parser::DateTimeShouldSilenceWhenWrongDataSize()
+{
+    QSignalSpy spy(&cut, &RecvParser::setDateTime);
+    QByteArray data(sizeof (PCK_DateTime_t) +1, Qt::Uninitialized);
+    QByteArray packet = makePck(PCT_DATETIME, DEV_ID, data);
+    cut.handleRecv(packet);
+    QCOMPARE(cut.bufferSize(), 0);
+    QCOMPARE(spy.count(), 0);
+}
+
+void test_parser::ParserSholdFilterGarbageData()
+{
+    QSignalSpy spy(&cut, &RecvParser::camSwitch);
+    QByteArray packet1 = makePck(PCT_CAM_SWITCH, DEV_ID, QByteArray("\x01"));
+    QByteArray packet2 = makePck(PCT_CAM_SWITCH, DEV_ID, QByteArray("\x02"));
+    QByteArray garbage1(3, RP_SIGNATURE_);
+    QByteArray garbage2("abcdef");
+
+    cut.handleRecv(garbage1 + packet1 + garbage2 + packet2);
+    QCOMPARE(cut.bufferSize(), 0);
+    QCOMPARE(spy.count(), 2);
+    QList<QVariant> args = spy.takeFirst();
+    QCOMPARE(args.takeAt(0).toUInt(), 1);
+    args = spy.takeFirst();
+    QCOMPARE(args.takeAt(0).toUInt(), 2);
+
+}
+
+
 
 QTEST_APPLESS_MAIN(test_parser)
 
