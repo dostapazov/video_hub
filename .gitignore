@@ -1,5 +1,6 @@
 images*/
 *.user
+*.user.*
 *.moc
 common*/
 *.zip
