@@ -135,9 +135,10 @@
         <translation type="unfinished">Русский</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="189"/>
-        <location filename="MainWindow.cpp" line="290"/>
-        <location filename="MainWindow.cpp" line="365"/>
+        <location filename="MainWindow.cpp" line="192"/>
+        <location filename="MainWindow.cpp" line="293"/>
+        <location filename="MainWindow.cpp" line="393"/>
+        <location filename="MainWindow.cpp" line="431"/>
         <source>Start byte: 0x%1
 </source>
         <oldsource>Стартовый байт: 0x%1
@@ -146,52 +147,57 @@
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="191"/>
-        <location filename="MainWindow.cpp" line="292"/>
-        <location filename="MainWindow.cpp" line="367"/>
+        <location filename="MainWindow.cpp" line="194"/>
+        <location filename="MainWindow.cpp" line="295"/>
+        <location filename="MainWindow.cpp" line="395"/>
+        <location filename="MainWindow.cpp" line="433"/>
         <source>Package number: %1
 </source>
         <translation type="unfinished">Номер пакета: %1
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="192"/>
-        <location filename="MainWindow.cpp" line="293"/>
-        <location filename="MainWindow.cpp" line="368"/>
+        <location filename="MainWindow.cpp" line="195"/>
+        <location filename="MainWindow.cpp" line="296"/>
+        <location filename="MainWindow.cpp" line="396"/>
+        <location filename="MainWindow.cpp" line="434"/>
         <source>Data version: %1
 </source>
         <translation type="unfinished">Версия данных: %1
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="194"/>
-        <location filename="MainWindow.cpp" line="295"/>
-        <location filename="MainWindow.cpp" line="370"/>
+        <location filename="MainWindow.cpp" line="197"/>
+        <location filename="MainWindow.cpp" line="298"/>
+        <location filename="MainWindow.cpp" line="398"/>
+        <location filename="MainWindow.cpp" line="436"/>
         <source>Data size: %1
 </source>
         <translation type="unfinished">Размер данных: %1
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="190"/>
-        <location filename="MainWindow.cpp" line="291"/>
-        <location filename="MainWindow.cpp" line="366"/>
+        <location filename="MainWindow.cpp" line="193"/>
+        <location filename="MainWindow.cpp" line="294"/>
+        <location filename="MainWindow.cpp" line="394"/>
+        <location filename="MainWindow.cpp" line="432"/>
         <source>Session number: 0x%1%2
 </source>
         <translation type="unfinished">Номер сессии: 0x%1%2
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="371"/>
+        <location filename="MainWindow.cpp" line="399"/>
         <source>Errors: 0x%1%2
 </source>
         <translation type="unfinished">Ошибки: 0x%1%2
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="193"/>
-        <location filename="MainWindow.cpp" line="294"/>
-        <location filename="MainWindow.cpp" line="369"/>
+        <location filename="MainWindow.cpp" line="196"/>
+        <location filename="MainWindow.cpp" line="297"/>
+        <location filename="MainWindow.cpp" line="397"/>
+        <location filename="MainWindow.cpp" line="435"/>
         <source>Package type: %1
 </source>
         <oldsource>Тип пакета: %1
@@ -200,90 +206,97 @@
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="18"/>
-        <location filename="MainWindow.cpp" line="78"/>
+        <location filename="MainWindow.cpp" line="20"/>
+        <location filename="MainWindow.cpp" line="81"/>
         <source>channel A (not activated)</source>
         <translation type="unfinished">канал А (не активирован)</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="19"/>
-        <location filename="MainWindow.cpp" line="79"/>
+        <location filename="MainWindow.cpp" line="21"/>
+        <location filename="MainWindow.cpp" line="82"/>
         <source>channel A (activated)</source>
         <translation type="unfinished">канал А (активирован)</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="20"/>
-        <location filename="MainWindow.cpp" line="80"/>
+        <location filename="MainWindow.cpp" line="22"/>
+        <location filename="MainWindow.cpp" line="83"/>
         <source>channel B (not activated)</source>
         <translation type="unfinished">канал Б (не активирован)</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="21"/>
-        <location filename="MainWindow.cpp" line="81"/>
+        <location filename="MainWindow.cpp" line="23"/>
+        <location filename="MainWindow.cpp" line="84"/>
         <source>channel B (activated)</source>
         <translation type="unfinished">канал Б (активирован)</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="108"/>
+        <location filename="MainWindow.cpp" line="111"/>
         <source>The tcp connection is established. host : %1 port : %2</source>
         <translation type="unfinished">Соединение tcp установлено. host^ %1 port: %2</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="113"/>
+        <location filename="MainWindow.cpp" line="116"/>
         <source>The tcp connection is not established</source>
         <translation type="unfinished">Соединение tcp не установлено</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="195"/>
+        <location filename="MainWindow.cpp" line="198"/>
+        <location filename="MainWindow.cpp" line="437"/>
         <source>Msec: 0x%1
 </source>
         <translation type="unfinished">Мсек: 0x%1
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="196"/>
+        <location filename="MainWindow.cpp" line="199"/>
+        <location filename="MainWindow.cpp" line="438"/>
         <source>Sec: 0x%1
 </source>
         <translation type="unfinished">Сек: 0x%1
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="197"/>
+        <location filename="MainWindow.cpp" line="200"/>
+        <location filename="MainWindow.cpp" line="439"/>
         <source>Min: 0x%1
 </source>
         <translation type="unfinished">Мин: 0x%1
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="198"/>
+        <location filename="MainWindow.cpp" line="201"/>
+        <location filename="MainWindow.cpp" line="440"/>
         <source>Hour: 0x%1
 </source>
         <translation type="unfinished">Час: 0x%1
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="199"/>
+        <location filename="MainWindow.cpp" line="202"/>
+        <location filename="MainWindow.cpp" line="441"/>
         <source>Day: 0x%1
 </source>
         <translation type="unfinished">День: 0x%1
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="200"/>
+        <location filename="MainWindow.cpp" line="203"/>
+        <location filename="MainWindow.cpp" line="442"/>
         <source>Month: 0x%1
 </source>
         <translation type="unfinished">Месяц: 0x%1
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="201"/>
+        <location filename="MainWindow.cpp" line="204"/>
+        <location filename="MainWindow.cpp" line="443"/>
         <source>Year: 0x%1
 </source>
         <translation type="unfinished">Год: 0x%1
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="296"/>
+        <location filename="MainWindow.cpp" line="299"/>
         <source>Errors: 0x%1
 </source>
         <oldsource>Ошибки: 0x%1
@@ -292,8 +305,8 @@
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="297"/>
-        <location filename="MainWindow.cpp" line="372"/>
+        <location filename="MainWindow.cpp" line="300"/>
+        <location filename="MainWindow.cpp" line="400"/>
         <source>Output 1: 0x%1
 </source>
         <oldsource>Выход 1: 0x%1
@@ -302,8 +315,8 @@
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="298"/>
-        <location filename="MainWindow.cpp" line="373"/>
+        <location filename="MainWindow.cpp" line="301"/>
+        <location filename="MainWindow.cpp" line="401"/>
         <source>Output 2: 0x%1
 </source>
         <oldsource>Выход 2: 0x%1
@@ -312,8 +325,8 @@
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="299"/>
-        <location filename="MainWindow.cpp" line="374"/>
+        <location filename="MainWindow.cpp" line="302"/>
+        <location filename="MainWindow.cpp" line="402"/>
         <source>Output 3: 0x%1
 </source>
         <oldsource>Выход 3: 0x%1
@@ -322,8 +335,8 @@
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="300"/>
-        <location filename="MainWindow.cpp" line="375"/>
+        <location filename="MainWindow.cpp" line="303"/>
+        <location filename="MainWindow.cpp" line="403"/>
         <source>Output 4: 0x%1
 </source>
         <oldsource>Выход 4: 0x%1
@@ -332,31 +345,34 @@
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="203"/>
-        <location filename="MainWindow.cpp" line="302"/>
-        <location filename="MainWindow.cpp" line="376"/>
+        <location filename="MainWindow.cpp" line="206"/>
+        <location filename="MainWindow.cpp" line="305"/>
+        <location filename="MainWindow.cpp" line="404"/>
+        <location filename="MainWindow.cpp" line="444"/>
         <source>CRC-32: 0x%1
 </source>
         <translation type="unfinished">CRC-32: 0x%1
 </translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="360"/>
+        <location filename="MainWindow.cpp" line="388"/>
+        <location filename="MainWindow.cpp" line="426"/>
         <source>error packet number new %1  old %2</source>
         <translation type="unfinished">ошибка номер пакета новый %1 старый %2</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="380"/>
+        <location filename="MainWindow.cpp" line="408"/>
+        <location filename="MainWindow.cpp" line="448"/>
         <source>The checksum doesn&apos;t match.</source>
         <translation type="unfinished">Контрольная сумма не совпадает.</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="410"/>
+        <location filename="MainWindow.cpp" line="471"/>
         <source>Connected</source>
         <translation type="unfinished">Подключено</translation>
     </message>
     <message>
-        <location filename="MainWindow.cpp" line="426"/>
+        <location filename="MainWindow.cpp" line="485"/>
         <source>Not connected</source>
         <translation type="unfinished">Не подключено</translation>
     </message>

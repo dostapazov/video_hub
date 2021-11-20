@@ -11,7 +11,7 @@ const int answerSizeHeader = 10;
 const int answerSizeData = 20;
 const int answerSizeTime = 22;
 
-MainWindow::MainWindow(QWidget *parent) :
+MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
@@ -27,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect_lost();
     connect(&timer, SIGNAL(timeout()), SLOT(send()));
 
-    connect(&tcpSocket, &QTcpSocket::connected   , this, &MainWindow::connect_established);
+    connect(&tcpSocket, &QTcpSocket::connected, this, &MainWindow::connect_established);
     connect(&tcpSocket, &QTcpSocket::disconnected, this, &MainWindow::connect_lost);
 
     ui->buttonConnect->clicked();
@@ -55,7 +55,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->rb44, SIGNAL(toggled(bool)), SLOT(sendOnChange(bool)));
 
     // пытаемся читать данные через кванты времени
-    QTimer *t = new QTimer(this);
+    QTimer* t = new QTimer(this);
     connect(t, SIGNAL(timeout()), this, SLOT(read()));
     t->start(10);
 
@@ -67,10 +67,11 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::changeEvent(QEvent *e)
+void MainWindow::changeEvent(QEvent* e)
 {
     QMainWindow::changeEvent(e);
-    switch (e->type()) {
+    switch (e->type())
+    {
         case QEvent::LanguageChange:
         {
             ui->retranslateUi(this);
@@ -85,7 +86,7 @@ void MainWindow::changeEvent(QEvent *e)
 
             ui->labelConnect->setText(tr(ui->labelConnect->property("tr").toString().toStdString().c_str()));
         }
-            break;
+        break;
         default:
             break;
     }
@@ -172,7 +173,7 @@ void MainWindow::on_buttonTime_clicked()
     uint32_t crc ; //
 
     // контрольная сумма
-    crc = crc32(ba,0, sizeof(data));
+    crc = crc32(ba, 0, sizeof(data));
     //crc = crc32_byte(0, reinterpret_cast<const uint8_t*>(ba.constData()), 16);
     char d[4];
     memcpy(d, &crc, 4);
@@ -273,7 +274,7 @@ void MainWindow::send()
     uint32_t crc ; //
 
     // контрольная сумма
-    crc = crc32(ba,0, sizeof(data));
+    crc = crc32(ba, 0, sizeof(data));
     //crc = crc32_byte(0, reinterpret_cast<const uint8_t*>(ba.constData()), 16);
     char d[4];
     memcpy(d, &crc, 4);
@@ -301,7 +302,7 @@ void MainWindow::send()
     res += QString(tr("Output 3: 0x%1\n")).arg(ba.mid(14, 1).toHex().toStdString().c_str());
     res += QString(tr("Output 4: 0x%1\n")).arg(ba.mid(15, 1).toHex().toStdString().c_str());
 //    res += QString(tr("CRC-32: 0x%1\n")).arg(ba.mid(16, 4).toHex().toStdString().c_str());
-    res += QString(tr("CRC-32: 0x%1\n")).arg(crc,0,16);
+    res += QString(tr("CRC-32: 0x%1\n")).arg(crc, 0, 16);
     ui->teRequest->setText(res);
 }
 
@@ -383,8 +384,8 @@ void MainWindow::readAnswerData(QByteArray answer)
         memcpy(&crc, answer.mid(16, 4), 4);
         if (crc == crc32(answer, 0, sizeof(DataInfo)))
         {
-            if(rx_number && ( (data.packageNumber - rx_number) != 1 ))
-              qDebug() << tr("error packet number new %1  old %2").arg(data.packageNumber).arg(rx_number);
+            if (rx_number && ( (data.packageNumber - rx_number) != 1 ))
+                qDebug() << tr("error packet number new %1  old %2").arg(data.packageNumber).arg(rx_number);
 
             rx_number = data.packageNumber;
 
@@ -421,8 +422,8 @@ void MainWindow::readAnswerTime(QByteArray answer)
         memcpy(&crc, answer.mid(18, 4), 4);
         if (crc == crc32(answer, 0, sizeof(TimeInfo)))
         {
-            if(rx_number && ( (data.packageNumber - rx_number) != 1 ))
-              qDebug() << tr("error packet number new %1  old %2").arg(data.packageNumber).arg(rx_number);
+            if (rx_number && ( (data.packageNumber - rx_number) != 1 ))
+                qDebug() << tr("error packet number new %1  old %2").arg(data.packageNumber).arg(rx_number);
 
             rx_number = data.packageNumber;
 
@@ -477,15 +478,15 @@ void MainWindow::connect_established()
 void MainWindow::connect_lost()
 {
     timer.stop();
-    if(tcpSocket.isOpen())
+    if (tcpSocket.isOpen())
     {
-     tcpSocket.disconnectFromHost();
-     tcpSocket.close();
-     ui->labelConnect->setText(tr("Not connected"));
-     ui->labelConnect->setProperty("tr", "Not connected");
-     QPalette palette = ui->labelConnect->palette();
-     palette.setColor(QPalette::WindowText, Qt::red );
-     ui->labelConnect->setPalette(palette);
+        tcpSocket.disconnectFromHost();
+        tcpSocket.close();
+        ui->labelConnect->setText(tr("Not connected"));
+        ui->labelConnect->setProperty("tr", "Not connected");
+        QPalette palette = ui->labelConnect->palette();
+        palette.setColor(QPalette::WindowText, Qt::red );
+        ui->labelConnect->setPalette(palette);
     }
 }
 
