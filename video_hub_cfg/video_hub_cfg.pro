@@ -54,7 +54,7 @@ RESOURCES += \
 	video_hub.qrc
 
 linux:{
-	LIBS += libssh
+	LIBS += -l ssh2
 }
 
 windows:{
