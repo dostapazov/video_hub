@@ -12,7 +12,8 @@ enum PCK_Type
     PCT_CAM_SWITCH,
     PCT_DATETIME,
     PCT_STATE,
-    PCT_UPDATE_EXECUTALE
+    PCT_UPDATE_EXECUTALE,
+    PCT_MAX_COMMAND
 };
 
 
@@ -53,7 +54,11 @@ typedef struct
 #pragma pack(pop)
 
 
-constexpr int EMPTY_PACKET_SIZE = (sizeof(PCK_Header_t) + sizeof(quint32));
+
+
+constexpr int    EMPTY_PACKET_SIZE   = (sizeof(PCK_Header_t) + sizeof(quint32));
+constexpr size_t PAKET_MAX_DATA_SIZE = sizeof (PCK_DateTime_t);
+
 inline int packetSize(const PCK_Header_t* hdr) {return  EMPTY_PACKET_SIZE + hdr->size;}
 QByteArray makePck(quint8 type, quint8 devId, QByteArray data);
 bool checkCRC(const QByteArray& packet);

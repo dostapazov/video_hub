@@ -29,8 +29,8 @@ signals:
     void updateExecutable();
 protected:
     void  handleRecv(const QByteArray& rxData);
+    void SyncBuffer();
     const PCK_Header_t* hasPacket();
-    const PCK_Header_t* checkCompletePacket();
     void removePacket();
 private slots:
     void readyRead();

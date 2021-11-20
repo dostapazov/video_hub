@@ -216,7 +216,7 @@ void test_parser::ParserSholdFilterGarbageData()
     QByteArray garbage1(3, RP_SIGNATURE_);
     QByteArray garbage2("abcdef");
 
-    cut.handleRecv(garbage1 + packet1 + garbage2 + packet2);
+    cut.handleRecv(garbage2 + packet1 + garbage1 + packet2);
     QCOMPARE(cut.bufferSize(), 0);
     QCOMPARE(spy.count(), 2);
     QList<QVariant> args = spy.takeFirst();

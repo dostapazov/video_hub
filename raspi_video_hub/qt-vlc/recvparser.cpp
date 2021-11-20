@@ -58,13 +58,12 @@ void  RecvParser::handleRecv(const QByteArray& rxData)
             m_buffer.remove(0, packetSize(hdr));
         }
         else
-            m_buffer.data()[0] = ~m_signature;
+            m_buffer.remove(0, 1);
     }
 }
 
 
-
-const PCK_Header_t* RecvParser::hasPacket()
+void RecvParser::SyncBuffer()
 {
     int index = m_buffer.indexOf(m_signature);
     if (index)
@@ -74,28 +73,27 @@ const PCK_Header_t* RecvParser::hasPacket()
         else
             m_buffer.clear();
     }
-
-    const PCK_Header_t* hdr =  checkCompletePacket();
-    return hdr;
 }
 
-const PCK_Header_t* RecvParser::checkCompletePacket()
+const PCK_Header_t* RecvParser::hasPacket()
 {
+    SyncBuffer();
     if (m_buffer.size() <  EMPTY_PACKET_SIZE)
         return nullptr;
+
     const PCK_Header_t* hdr = reinterpret_cast<const PCK_Header_t*>(m_buffer.constData());
 
     if (m_buffer.size() < packetSize(hdr))
+    {
+        if (hdr->pckType >= PCK_Type::PCT_MAX_COMMAND || hdr->size > PAKET_MAX_DATA_SIZE)
+        {
+            m_buffer.remove(0, 1);
+            return hasPacket();
+        }
         return nullptr;
+    }
 
     return hdr;
-}
-
-void RecvParser::removePacket()
-{
-    const PCK_Header_t* packet = checkCompletePacket();
-    if (packet)
-        m_buffer.remove(0, packetSize(packet));
 }
 
 void RecvParser::onCamSwitch(const PCK_Header_t* hdr)
