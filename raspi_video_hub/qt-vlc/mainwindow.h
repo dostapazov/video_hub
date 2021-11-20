@@ -12,7 +12,7 @@
 #include "ui_mainwindow.h"
 #include "filedeleterthread.h"
 #include "cam_logger_vlc.h"
-#include "vlcclasses.hpp"
+#include "recvparser.hpp"
 #include "proto.h"
 #include <functional>
 
@@ -43,15 +43,13 @@ private slots:
 
     void onUARTread();
     void parseReceive();
-
-
-
-
     void on_blink();
     void onCamSwitch(quint8 camId);
     void on_bTestUpdate_clicked();
     void onFramesChanged(int frames);
     void onMonitorError();
+
+    void setSystemDateTime(QDateTime dt);
 
 private:
     void closeEvent(QCloseEvent* event) override;
@@ -79,7 +77,7 @@ private:
     QString whoami();
     bool check_media_drive();
     void handle_uart_packet(PCK_Header_t& header, int offset);
-    void setSystemDateTime(QDateTime dt);
+
 
     quint8 devId;
     QString m_vlog_root  ;
@@ -98,6 +96,7 @@ private:
 
     QTimer blinker ;
     QTimer parser  ;
+    RecvParser recvParser;
 
     int                led_state = 1;
 

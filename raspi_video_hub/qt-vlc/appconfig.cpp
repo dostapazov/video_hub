@@ -101,6 +101,16 @@ QString     appConfig::get_log_folder()
     return value("VLOG/Folder").toString();
 }
 
+void        appConfig::set_log_folder(const QString& folder)
+{
+    setValue("VLOG/Folder", folder);
+}
+
+void        appConfig::set_log_enabled(bool enabled)
+{
+    setValue("VLOG/Enabled", enabled);
+}
+
 QString     appConfig::get_log_name()
 {
     constexpr const char* key = "TLOG/FILE";

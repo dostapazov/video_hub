@@ -6,8 +6,6 @@
 
 void MainWindow::init_uart()
 {
-    char b[] = {1, 2, 3, CU_SIGNATURE_, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-    rxBuf.append(b);
 
     QString  uartDevName = appConfig::get_uart_device();
     uint32_t uartBaud    = appConfig::get_uart_speed ();
@@ -33,7 +31,9 @@ void MainWindow::init_uart()
     uart->setStopBits(QSerialPort::OneStop);
     uart->open(QSerialPort::ReadWrite);
     if (uart->isOpen())
+    {
         connect(uart, &QIODevice::readyRead, this, &MainWindow::onUARTread, Qt::ConnectionType::QueuedConnection);
+    }
     qDebug() << Q_FUNC_INFO << uart->isOpen() << uart->errorString() << uart->baudRate();
 }
 

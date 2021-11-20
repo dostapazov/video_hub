@@ -111,10 +111,10 @@ void MainWindow::closeEvent(QCloseEvent* event)
 QList<cam_params_t> MainWindow::readCameraList()
 {
     QList<cam_params_t> cams;
-#ifdef DESKTOP_DEBUG_BUILD
-    cams.append({1, tr("IPCam100"), tr("rtsp://192.168.0.100:554/media/video1"), false});
-    cams.append({1, tr("IPCam101"), tr("rtsp://192.168.0.101:554/media/video1"), false});
-#else
+//#ifdef DESKTOP_DEBUG_BUILD
+//    cams.append({1, tr("IPCam100"), tr("rtsp://192.168.0.100:554/media/video1"), false});
+//    cams.append({1, tr("IPCam101"), tr("rtsp://192.168.0.101:554/media/video1"), false});
+//#else
 
     cam_params_t cam_param;
 
@@ -134,7 +134,7 @@ QList<cam_params_t> MainWindow::readCameraList()
             cams.append(cam_param);
         }
     }
-#endif
+//#endif
     return cams;
 }
 
@@ -223,8 +223,8 @@ bool MainWindow::check_media_drive()
     QString strPath =  appConfig::get_mount_point();
     addFolder(strPath, whoami());
     addFolder(strPath, appConfig::get_log_folder());
-
     appLog::write(0,  tr("check existing streamig dir %1").arg(strPath));
+
     if ( QDir(strPath).exists() )
     {
 
@@ -234,9 +234,12 @@ bool MainWindow::check_media_drive()
     else
     {
         appLog::write(0, tr("directory NOT exist: write videolog disabled "));
+
         m_vlog_root.clear();
     }
-    return  !m_vlog_root.isEmpty();
+    bool logEnabled = !m_vlog_root.isEmpty();
+    appConfig::set_log_enabled(logEnabled);
+    return logEnabled;
 }
 
 QString MainWindow::whoami()

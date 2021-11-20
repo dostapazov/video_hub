@@ -48,6 +48,7 @@ SOURCES += recorder_main.cpp\
 	proto.cpp \
 	applog.cpp \
 	filedeleterthread.cpp \
+	recvparser.cpp \
 	vlclasses.cpp \
 	main_window_uart.cpp \
 	cam_logger_vlc.cpp
@@ -58,6 +59,7 @@ HEADERS  += mainwindow.h \
 	proto.h \
 	applog.h \
 	filedeleterthread.h \
+	recvparser.hpp \
 	vlcclasses.hpp \
 	cam_logger_vlc.h
 
