@@ -296,8 +296,8 @@ void MainWindow::onCamSwitch(quint8 camId)
 void MainWindow::startCamMonitor()
 {
     appLog::write(2, "start_cam_monitor ");
-    m_camWindow = new QOpenGLWidget;
-    //m_camWindow = new QWidget;
+    //m_camWindow = new QOpenGLWidget;
+    m_camWindow = new QWidget;
 
     cam_monitor = new cam_logger_vlc({-1, "Monitor logger", ""});
     connect(cam_monitor, &cam_logger_vlc::onPlayStart, this, &MainWindow::onStartMon);
