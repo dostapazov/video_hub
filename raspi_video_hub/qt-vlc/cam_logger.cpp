@@ -110,7 +110,7 @@ QString     cam_logger::get_file_name(const QDateTime& dtm)
 bool cam_logger::startMonitoring(QWidget* widget, const QString& mrl)
 {
     m_StreamingMode = false;
-    if (!widget || mrl.isEmpty())
+    if ( mrl.isEmpty())
         return false;
 
     if (!m_player)
@@ -129,7 +129,6 @@ bool cam_logger::startMonitoring(QWidget* widget, const QString& mrl)
 
     m_params.mrl = mrl;
     vlc::vlc_media* media = m_player->set_media(create_media());
-
     m_player->play();
     if (media)
         media->deleteLater();
@@ -164,6 +163,7 @@ int cam_logger::setupMediaForStreaming(vlc::vlc_media* media)
     int time_len      = get_time_interval(dtm);
     media->add_option(":no-audio");
     media->add_option(":no-overlay");
+    media->add_option(":rtsp-timeout=5000");
     media->add_option(":sout-mp4-faststart");
 
     str = QString(":network-caching=%1").arg(m_network_caching);
@@ -195,16 +195,17 @@ vlc::vlc_media*  cam_logger::create_media()
     vlc::vlc_media* media   = new vlc::vlc_media;
     if (media)
     {
-        media->add_option(":rtsp-timeout=5000");
         if (media->open_location(get_mrl().toLocal8Bit().constData()))
         {
-            str = QString("%1 create next media ").arg(get_name());
             if (isStreaming())
             {
+                str = QString("%1 create next media ").arg(get_name());
                 m_file_timelen = setupMediaForStreaming(media);
                 div_t t     = div(m_file_timelen, 1000);
                 str += QString(" interval %1. %2").arg(t.quot).arg(t.rem);
             }
+            else
+                media->add_option(":rtsp-timeout=20000");
         }
         else
         {

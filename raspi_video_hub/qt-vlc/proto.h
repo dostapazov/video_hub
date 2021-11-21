@@ -60,7 +60,7 @@ constexpr int    EMPTY_PACKET_SIZE   = (sizeof(PCK_Header_t) + sizeof(quint32));
 constexpr size_t PAKET_MAX_DATA_SIZE = sizeof (PCK_DateTime_t);
 
 inline int packetSize(const PCK_Header_t* hdr) {return  EMPTY_PACKET_SIZE + hdr->size;}
-QByteArray makePck(quint8 type, quint8 devId, QByteArray data);
+QByteArray makePck(quint8 type, quint8 devId, QByteArray data, quint8 sig = RP_SIGNATURE_);
 bool checkCRC(const QByteArray& packet);
 
 

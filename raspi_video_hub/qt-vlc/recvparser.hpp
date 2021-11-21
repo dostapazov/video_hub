@@ -27,7 +27,7 @@ signals:
     void appState();
     void setDateTime(QDateTime);
     void updateExecutable();
-    void errorPacket(QByteArray);
+    void errorPacket(QByteArray, bool crcError = false);
 protected:
     void  handleRecv(const QByteArray& rxData);
     void SyncBuffer();

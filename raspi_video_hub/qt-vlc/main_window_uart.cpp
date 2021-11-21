@@ -7,7 +7,6 @@
 
 void MainWindow::init_uart()
 {
-
     QString  uartDevName = appConfig::get_uart_device();
     uint32_t uartBaud    = appConfig::get_uart_speed ();
     if (uartDevName.isEmpty() || !uartBaud)
@@ -68,13 +67,9 @@ void MainWindow::deinitUART()
 
 
 
-
-
-
-
-void MainWindow::errorPacket(QByteArray packet)
+void MainWindow::errorPacket(QByteArray packet, bool crc)
 {
-    appLog::write(0, "Wrong packet:");
+    appLog::write(0, QString("Wrong packet :") + QString(crc ? "error CRC" : ""));
     appLog::write(0, packet.toHex().toUpper());
 }
 

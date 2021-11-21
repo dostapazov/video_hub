@@ -64,7 +64,10 @@ void  RecvParser::handleRecv(const QByteArray& rxData)
             m_buffer.remove(0, packetSize(hdr));
         }
         else
+        {
+            emit errorPacket(m_buffer.left(packetSize(hdr)), true);
             m_buffer.remove(0, 1);
+        }
     }
 }
 
@@ -91,12 +94,14 @@ const PCK_Header_t* RecvParser::hasPacket()
 
     if (m_buffer.size() < packetSize(hdr))
     {
-        if (hdr->pckType >= PCK_Type::PCT_MAX_COMMAND || hdr->size > PAKET_MAX_DATA_SIZE)
-        {
-            m_buffer.remove(0, 1);
-            return hasPacket();
-        }
-        return nullptr;
+        m_buffer.remove(0, 1);
+        return hasPacket();
+    }
+
+    if (hdr->pckType >= PCK_Type::PCT_MAX_COMMAND || hdr->size > PAKET_MAX_DATA_SIZE)
+    {
+        m_buffer.remove(0, 1);
+        return hasPacket();
     }
 
     return hdr;
@@ -109,10 +114,8 @@ void RecvParser::onCamSwitch(const PCK_Header_t* hdr)
         const quint8* p_cam_id = reinterpret_cast<const quint8*>(hdr) + sizeof(*hdr);
         quint8 cam_id = p_cam_id[0];
         if (cam_id)
-        {
             emit camSwitch(cam_id - 1);
-            return;
-        }
+        return;
     }
     emit errorPacket(m_buffer.left(packetSize(hdr)));
 }

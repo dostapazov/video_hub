@@ -308,15 +308,15 @@ void MainWindow::send()
 
 void MainWindow::sendOnChange(bool checked)
 {
-    if (!checked)
-        return;
-    int time = timer.remainingTime();
-    if (time < 10)
-        return;
-    if ((timer.interval() - time) < 10)
-        QTimer::singleShot(10, this, SLOT(send()));
-    else
-        send();
+//    if (!checked)
+//        return;
+//    int time = timer.remainingTime();
+//    if (time < 10)
+//        return;
+//    if ((timer.interval() - time) < 10)
+//        QTimer::singleShot(10, this, SLOT(send()));
+//    else
+    send();
 }
 
 QByteArray MainWindow::getAnswer()

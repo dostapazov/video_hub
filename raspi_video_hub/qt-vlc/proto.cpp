@@ -2,11 +2,11 @@
 #include "appconfig.h"
 
 
-QByteArray makePck(quint8 type, quint8 devId, QByteArray data)
+QByteArray makePck(quint8 type, quint8 devId, QByteArray data, quint8 sig  )
 {
     PCK_Header_t header;
 
-    header.signture = RP_SIGNATURE_;
+    header.signture = sig;
     header.pckType  = type;
     header.devId    = devId;
     header.size     = data.count();

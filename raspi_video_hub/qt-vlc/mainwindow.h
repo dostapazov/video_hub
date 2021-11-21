@@ -55,7 +55,7 @@ private slots:
     void reqShutDown();
     void reqUpdateExecuteble();
 
-    void errorPacket(QByteArray packet);
+    void errorPacket(QByteArray packet, bool crc);
 
 private:
     void closeEvent(QCloseEvent* event) override;
@@ -81,8 +81,6 @@ private:
     void readCPUtemper();
     QString whoami();
     bool check_media_drive();
-    void handle_uart_packet(PCK_Header_t& header, int offset);
-
 
     quint8 devId;
     QString m_vlog_root  ;

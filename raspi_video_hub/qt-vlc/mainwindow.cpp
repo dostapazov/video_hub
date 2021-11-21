@@ -237,12 +237,12 @@ bool MainWindow::check_media_drive()
     QString strPath =  appConfig::get_mount_point();
     addFolder(strPath, whoami());
     addFolder(strPath, appConfig::get_vlog_folder());
-    appLog::write(0,  tr("check existing streamig dir %1").arg(strPath));
+    //appLog::write(0,  tr("check existing streamig dir %1").arg(strPath));
 
     if ( QDir(strPath).exists() )
     {
 
-        appLog::write(0, tr("directory exists. Begin logging video"));
+        appLog::write(0, tr("Begin logging video"));
         m_vlog_root = strPath;
     }
     else
@@ -280,13 +280,12 @@ void MainWindow::onCamSwitch(quint8 camId)
         appConfig::set_mon_camera(camId);
         const cam_logger* clogger = loggers.at(camId);
         QString str = tr("Monitor switch to camera (%1) %2").arg(int(camId)).arg(clogger->get_mrl());
-        qDebug() << str;
         appLog::write(6, str);
-
         m_camWindow->setWindowTitle(clogger->get_name());
         cam_monitor->startMonitoring(m_camWindow, clogger->get_mrl());
         str = QString("Wait data from %1").arg(clogger->get_name());
         label->setText(str);
+        activateSelf();
     }
     return;
 }
