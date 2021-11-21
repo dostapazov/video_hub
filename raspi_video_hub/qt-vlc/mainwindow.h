@@ -94,7 +94,6 @@ private:
 
     QVector<cam_logger*>   loggers;
     cam_logger* cam_monitor = nullptr;
-    QWidget*   m_camWindow = nullptr;
     void onStartMon();
     void onStopMon();
 

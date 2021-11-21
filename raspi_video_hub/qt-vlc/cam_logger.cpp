@@ -106,7 +106,7 @@ QString     cam_logger::get_file_name(const QDateTime& dtm)
     return file_name;
 }
 
-bool cam_logger::startMonitoring(QWidget* widget, const QString& mrl)
+bool cam_logger::startMonitoring( const QString& mrl)
 {
     m_StreamingMode = false;
     if ( mrl.isEmpty())
@@ -116,18 +116,9 @@ bool cam_logger::startMonitoring(QWidget* widget, const QString& mrl)
     {
         createPlayer();
     }
-
-    if (widget)
-    {
-#ifdef Q_OS_LINUX
-        m_player->set_drawable(widget->winId());
-#else
-        m_player->set_drawable((void*)widget->winId());
-#endif
-    }
-
     m_params.mrl = mrl;
     vlc::vlc_media* media = m_player->set_media(create_media());
+
     m_player->play();
     if (media)
         media->deleteLater();
@@ -196,6 +187,8 @@ vlc::vlc_media*  cam_logger::create_media()
     {
         if (media->open_location(get_mrl().toLocal8Bit().constData()))
         {
+            media->add_option(":no-audio");
+            media->add_option(":no-overlay");
             if (isStreaming())
             {
                 str = QString("%1 create next media ").arg(get_name());
@@ -204,7 +197,7 @@ vlc::vlc_media*  cam_logger::create_media()
                 str += QString(" interval %1. %2").arg(t.quot).arg(t.rem);
             }
             else
-                media->add_option(":rtsp-timeout=20000");
+                media->add_option(":rtsp-timeout=3000");
         }
         else
         {
@@ -260,7 +253,7 @@ void cam_logger::initPlayerHandlers()
 void cam_logger::OnPlayerStopped(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
-    QString str = QString("%1 player stopped").arg(get_name());
+    QString str = QString("%1 stopped").arg(get_name());
     appLog::write(0, str);
     m_Playing = false;
     emit onPlayStop();
@@ -269,7 +262,7 @@ void cam_logger::OnPlayerStopped(vlc::vlc_player* player)
 void cam_logger::OnPlayerPlaying(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
-    QString str = QString("%1 player playing").arg(get_name());
+    QString str = QString("%1 playing").arg(get_name());
     appLog::write(0, str);
     m_Playing = true;
     if (isStreaming())

@@ -189,9 +189,6 @@ void MainWindow::deinitMonitor()
     cam_monitor->stop();
     cam_monitor->deleteLater();
     cam_monitor = nullptr;
-    if (m_camWindow)
-        m_camWindow->deleteLater();
-    m_camWindow = nullptr;
 }
 
 void MainWindow::deinitFileDeleter()
@@ -281,8 +278,7 @@ void MainWindow::onCamSwitch(quint8 camId)
         const cam_logger* clogger = loggers.at(camId);
         QString str = tr("Monitor switch to camera (%1) %2").arg(int(camId)).arg(clogger->get_mrl());
         appLog::write(6, str);
-        m_camWindow->setWindowTitle(clogger->get_name());
-        cam_monitor->startMonitoring(m_camWindow, clogger->get_mrl());
+        cam_monitor->startMonitoring(clogger->get_mrl());
         str = QString("Wait data from %1").arg(clogger->get_name());
         label->setText(str);
         activateSelf();
@@ -296,7 +292,7 @@ void MainWindow::startCamMonitor()
 {
     appLog::write(2, "start_cam_monitor ");
     //m_camWindow = new QOpenGLWidget;
-    m_camWindow = new QWidget;
+    //m_camWindow = new QWidget;
 
     cam_monitor = new cam_logger({-1, "Monitor logger", ""});
     connect(cam_monitor, &cam_logger::onPlayStart, this, &MainWindow::onStartMon);
@@ -323,13 +319,14 @@ void MainWindow::onStartMon()
     QString str = QString("Play from  %1").arg(clogger->get_name());
     label->setText(str);
     FrameNo->setText("-");
+    appLog::write(0, "Player set full screen");
 #if defined DESKTOP_DEBUG_BUILD
-    m_camWindow->show
-    ();
+
 #else
-    m_camWindow->showFullScreen();
+
 #endif
-    m_camWindow->activateWindow();
+    cam_monitor->getPlayer()->set_fullscreen(true);
+
 
 }
 
@@ -352,19 +349,16 @@ void MainWindow::activateSelf()
     showFullScreen();
 # endif
     activateWindow();
-    m_camWindow->hide();
+
 }
 
 void MainWindow::onMonitorError()
 {
     const cam_logger* clogger = loggers.at(appState.camId);
-    if (m_camWindow->isVisible())
-    {
-        QString str = QString("Camera %1 not respond").arg(clogger->get_name());
-        appLog::write(0, str);
-        onStopMon();
-    }
-    cam_monitor->startMonitoring(m_camWindow, clogger->get_mrl());
+    QString str = QString("Camera %1 not respond").arg(clogger->get_name());
+    appLog::write(0, str);
+    onStopMon();
+    cam_monitor->startMonitoring( clogger->get_mrl());
 }
 
 void MainWindow::startLoggers()
@@ -377,7 +371,7 @@ void MainWindow::startLoggers()
 
         foreach (cam_logger* cl, loggers)
         {
-            cl->startStreaming(m_vlog_root, timeDuration);
+            //cl->startStreaming(m_vlog_root, timeDuration);
         }
     }
     else
@@ -488,6 +482,6 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
 
 void MainWindow::onSwitchTimer()
 {
-    emit cam_switch(appState.camId ? 0 : 1);
+    //emit cam_switch(appState.camId ? 0 : 1);
 }
 

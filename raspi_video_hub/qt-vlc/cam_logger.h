@@ -43,7 +43,7 @@ public:
     const QString  get_name  () const   {return m_params.name;}
     const QString  get_mrl   () const   {return m_params.mrl;}
     void set_mrl(const QString& mrl);
-    bool startMonitoring(QWidget* widget, const QString& mrl);
+    bool startMonitoring(const QString& mrl);
     bool startStreaming(const QString folder, int timeDuration);
     void stop();
     bool isStreaming() { return m_StreamingMode;}
