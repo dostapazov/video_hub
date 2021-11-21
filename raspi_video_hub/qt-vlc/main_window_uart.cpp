@@ -44,12 +44,10 @@ void MainWindow::initRecvParser(QIODevice* io)
 {
     recvParser.setDevId(devId);
     recvParser.setIoDevice(io);
-    connect(&recvParser, &RecvParser::camSwitch, this, &MainWindow::onCamSwitch);
-    connect(&recvParser, &RecvParser::appState, this, &MainWindow::reqAppState);
-    connect(&recvParser, &RecvParser::setDateTime, this, &MainWindow::setSystemDateTime);
-    connect(&recvParser, &RecvParser::errorPacket, this, &MainWindow::errorPacket);
-
-
+    //connect(&recvParser, &RecvParser::camSwitch, this, &MainWindow::onCamSwitch, Qt::QueuedConnection);
+    connect(&recvParser, &RecvParser::appState, this, &MainWindow::reqAppState, Qt::QueuedConnection);
+    connect(&recvParser, &RecvParser::setDateTime, this, &MainWindow::setSystemDateTime, Qt::QueuedConnection);
+    connect(&recvParser, &RecvParser::errorPacket, this, &MainWindow::errorPacket, Qt::QueuedConnection);
 }
 
 
@@ -64,8 +62,6 @@ void MainWindow::deinitUART()
         uart = nullptr;
     }
 }
-
-
 
 void MainWindow::errorPacket(QByteArray packet, bool crc)
 {
@@ -94,6 +90,7 @@ void MainWindow::reqUpdateExecuteble()
 
 void MainWindow::reqAppState()
 {
+    appLog::write(0, "Respond AppState");
     uart->write(makePck(PCT_STATE, devId, QByteArray((char*)&appState, sizeof(appState))));
 }
 

@@ -22,7 +22,6 @@ cam_logger::cam_logger(const cam_params_t& aParams, QObject* parent )
     cutTimer.setSingleShot(true);
     connect(&cutTimer, &QTimer::timeout, this, &cam_logger::nextFile, Qt::ConnectionType::QueuedConnection);
     connect(&playWatchdog, &QTimer::timeout, this, &cam_logger::playChecker, Qt::ConnectionType::QueuedConnection);
-
     initPlayerHandlers();
 }
 

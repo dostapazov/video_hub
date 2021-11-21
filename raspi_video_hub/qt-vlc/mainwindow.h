@@ -56,6 +56,7 @@ private slots:
     void reqUpdateExecuteble();
 
     void errorPacket(QByteArray packet, bool crc);
+    void onSwitchTimer();
 
 private:
     void closeEvent(QCloseEvent* event) override;
@@ -100,6 +101,7 @@ private:
     QTimer blinker ;
     QTimer parser  ;
     QTimer starLoggersTimer ;
+    QTimer switchTimer;
     RecvParser recvParser;
     PCK_STATE_t        appState = {0xFF, 77, 777};
 

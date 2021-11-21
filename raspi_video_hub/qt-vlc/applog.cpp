@@ -16,17 +16,18 @@ appLog::appLog(QString logFileName, int _level, QObject* parent) : QObject(paren
 
 void appLog::logWrite(int log_level, QString message)
 {
+    QString mess = QString("%1 |L-%2| %3 \n").arg(QDateTime::currentDateTime().toString()).arg(log_level, 3).arg(message);
+    qDebug().noquote() << mess;
+
     if (level > log_level)
         return;
 
-    qDebug().noquote() << QString("level %1 : ").arg(log_level) << message;
     logFile.open(QFile::Text | (logFile.exists() ? QFile::Append : QFile::WriteOnly));
     if (logFile.size() > 256000)
     {
         logFile.resize(0);
         logFile.seek(0);
     }
-    QString mess = QString("%1 |L-%2| %3 \n").arg(QDateTime::currentDateTime().toString()).arg(log_level, 3).arg(message);
     logFile.write(mess.toUtf8().constData());
 
     logFile.close();

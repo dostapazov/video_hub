@@ -304,6 +304,9 @@ void MainWindow::startCamMonitor()
     connect(cam_monitor, &cam_logger::onError, this, &MainWindow::onMonitorError);
     connect(cam_monitor, &cam_logger::framesChanged, this, &MainWindow::onFramesChanged);
 
+    connect(&switchTimer, &QTimer::timeout, this, &MainWindow::onSwitchTimer);
+    switchTimer.start(30000);
+
     int cam_id = std::max(appConfig::get_mon_camera(), 0);
     emit cam_switch(static_cast<quint8>(cam_id));
 }
@@ -482,4 +485,9 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
     }
 }
 #endif
+
+void MainWindow::onSwitchTimer()
+{
+    emit cam_switch(appState.camId ? 0 : 1);
+}
 
