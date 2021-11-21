@@ -108,20 +108,22 @@ QString     cam_logger::get_file_name(const QDateTime& dtm)
 
 bool cam_logger::startMonitoring( const QString& mrl)
 {
+    qInfo() << "startMonitoring " << m_logger_player;
     m_StreamingMode = false;
     if ( mrl.isEmpty())
         return false;
 
-    if (!m_player)
-    {
-        createPlayer();
-    }
+    //releasePlayer();
+    createPlayer();
     m_params.mrl = mrl;
-    vlc::vlc_media* media = m_player->set_media(create_media());
-
-    m_player->play();
+    vlc::vlc_media* media = create_media();
+    media = m_logger_player->set_media(media);
+    m_logger_player->play();
     if (media)
-        media->deleteLater();
+    {
+        media->close();
+        delete media;
+    }
     startPlayWatchDog();
     return true;
 }
@@ -170,9 +172,9 @@ void cam_logger::set_mrl(const QString& mrl)
     if (m_params.mrl != mrl)
     {
         m_params.mrl = mrl;
-        if (m_player && m_player->hasMedia())
+        if (m_logger_player && m_logger_player->hasMedia())
         {
-            m_player->open_mrl(mrl);
+            m_logger_player->open_mrl(mrl);
         }
     }
 }
@@ -228,8 +230,8 @@ void cam_logger::nextFile()
     createPlayer();
 
     vlc::vlc_media* media = create_media();
-    media = m_player->set_media(media);
-    m_player->play();
+    media = m_logger_player->set_media(media);
+    m_logger_player->play();
 
 
     if (media)
@@ -269,7 +271,11 @@ void cam_logger::OnPlayerPlaying(vlc::vlc_player* player)
         cutTimer.start();
     }
     else
-        m_player->set_fullscreen(true);
+    {
+#ifndef DESKTOP_DEBUG_BUILD
+        m_logger_player->set_fullscreen(true);
+#endif
+    }
 
     startPlayWatchDog();
     emit onPlayStart();
@@ -280,46 +286,49 @@ void   cam_logger::player_events(const libvlc_event_t event)
 {
     player_event_handler_t handler = playerHandlers.value(static_cast<libvlc_event_e>(event.type));
     if (handler)
-        handler(m_player);
+        handler(m_logger_player);
 }
 
 vlc::vlc_player*   cam_logger::createPlayer()
 {
-    if (!m_player)
+    if (!m_logger_player)
     {
-        m_player = new vlc::vlc_player;
-        connect(m_player, &vlc::vlc_player::player_event, this, &cam_logger::player_events, Qt::ConnectionType::QueuedConnection);
+        m_logger_player = new vlc::vlc_player;
+        connect(m_logger_player, &vlc::vlc_player::player_event, this, &cam_logger::player_events, Qt::ConnectionType::QueuedConnection);
 
         QList<libvlc_event_e> keys = playerHandlers.keys();
         for ( libvlc_event_e&   event : keys )
         {
-            m_player->event_activate(event, true);
+            m_logger_player->event_activate(event, true);
         }
 
     }
-    return m_player;
+    return m_logger_player;
 }
 
 void      cam_logger::releasePlayer()
 {
-    if (m_player)
+    if (m_logger_player)
     {
-        m_player->disconnect();
-        m_player->stop();
+        m_logger_player->disconnect();
+        m_logger_player->stop();
 
-        vlc::vlc_media* media = m_player->set_media(nullptr);
+        vlc::vlc_media* media = m_logger_player->set_media(nullptr);
 
         if (media)
+        {
+            media->close();
             media->deleteLater();
+        }
 
-        m_player->deleteLater();
-        m_player = nullptr;
+        m_logger_player->deleteLater();
+        m_logger_player = nullptr;
     }
 }
 
 void cam_logger::playChecker()
 {
-    libvlc_media_stats_t stats =  m_player->get_media_stats();
+    libvlc_media_stats_t stats =  m_logger_player->get_media_stats();
     if (m_demuxReadBytes != stats.i_demux_read_bytes)
     {
         if (!isStreaming())
@@ -351,9 +360,9 @@ void cam_logger::startPlayWatchDog()
 
 bool cam_logger::togglePlaying()
 {
-    if (m_player)
+    if (m_logger_player)
     {
-        return m_player->is_playing() ? m_player->stop() : m_player->play();
+        return m_logger_player->is_playing() ? m_logger_player->stop() : m_logger_player->play();
     }
     return false;
 }

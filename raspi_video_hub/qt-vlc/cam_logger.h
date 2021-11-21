@@ -48,7 +48,7 @@ public:
     void stop();
     bool isStreaming() { return m_StreamingMode;}
     bool togglePlaying();
-    vlc::vlc_player* getPlayer() {return  m_player;}
+    vlc::vlc_player* getPlayer() {return  m_logger_player;}
 
 signals :
     void onPlayStart();
@@ -98,7 +98,7 @@ private:
     int           m_demuxReadBytes  = 0;
 
     static constexpr int PLAY_WATCHDOG_TIMEOUT = 5000;
-    vlc::vlc_player*  m_player     = nullptr;
+    vlc::vlc_player*  m_logger_player     = nullptr;
 };
 
 #endif // CAM_LOGGER_H

@@ -53,6 +53,9 @@ MainWindow::MainWindow(QWidget* parent) :
     init_libvlc      ();
     init_uart        ();
     load_config      ();
+    initCamMonitor();
+    startCamMonitor();
+    startLoggers();
 
 #if defined (DESKTOP_DEBUG_BUILD)
     show();
@@ -87,8 +90,6 @@ void MainWindow::init_libvlc()
 void MainWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
-    startCamMonitor();
-    startLoggers();
 }
 
 void MainWindow::start_file_deleter()
@@ -187,7 +188,7 @@ void MainWindow::deinitLoggers()
 void MainWindow::deinitMonitor()
 {
     cam_monitor->stop();
-    cam_monitor->deleteLater();
+    delete cam_monitor;
     cam_monitor = nullptr;
 }
 
@@ -288,19 +289,24 @@ void MainWindow::onCamSwitch(quint8 camId)
 
 
 
+void MainWindow::initCamMonitor()
+{
+    if (!cam_monitor)
+    {
+        cam_monitor = new cam_logger({-1, "Monitor logger", ""});
+        connect(cam_monitor, &cam_logger::onPlayStart, this, &MainWindow::onStartMon);
+        connect(cam_monitor, &cam_logger::onPlayStop, this, &MainWindow::onStopMon);
+        connect(cam_monitor, &cam_logger::onError, this, &MainWindow::onMonitorError);
+        connect(cam_monitor, &cam_logger::framesChanged, this, &MainWindow::onFramesChanged);
+        connect(&switchTimer, &QTimer::timeout, this, &MainWindow::onSwitchTimer);
+    }
+}
+
 void MainWindow::startCamMonitor()
 {
     appLog::write(2, "start_cam_monitor ");
     //m_camWindow = new QOpenGLWidget;
     //m_camWindow = new QWidget;
-
-    cam_monitor = new cam_logger({-1, "Monitor logger", ""});
-    connect(cam_monitor, &cam_logger::onPlayStart, this, &MainWindow::onStartMon);
-    connect(cam_monitor, &cam_logger::onPlayStop, this, &MainWindow::onStopMon);
-    connect(cam_monitor, &cam_logger::onError, this, &MainWindow::onMonitorError);
-    connect(cam_monitor, &cam_logger::framesChanged, this, &MainWindow::onFramesChanged);
-
-    connect(&switchTimer, &QTimer::timeout, this, &MainWindow::onSwitchTimer);
     switchTimer.start(30000);
 
     int cam_id = std::max(appConfig::get_mon_camera(), 0);
@@ -321,9 +327,9 @@ void MainWindow::onStartMon()
     FrameNo->setText("-");
     appLog::write(0, "Player set full screen");
 #if defined DESKTOP_DEBUG_BUILD
-
+    showMinimized();
 #else
-
+    hide();
 #endif
     //cam_monitor->getPlayer()->set_fullscreen(true);
 
@@ -343,8 +349,9 @@ void MainWindow::onStopMon()
 void MainWindow::activateSelf()
 {
 
+    showNormal();
 #if defined DESKTOP_DEBUG_BUILD
-    show();
+
 #else
     showFullScreen();
 # endif

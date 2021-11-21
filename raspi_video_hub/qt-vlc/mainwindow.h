@@ -124,6 +124,7 @@ private:
     void initStartLoggers();
     void initRecvParser(QIODevice* io);
 
+    void initCamMonitor();
 };
 
 #ifndef DESKTOP_DEBUG_BUILD
