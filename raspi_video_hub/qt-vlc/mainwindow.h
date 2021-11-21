@@ -11,7 +11,7 @@
 
 #include "ui_mainwindow.h"
 #include "filedeleterthread.h"
-#include "cam_logger_vlc.h"
+#include "cam_logger.h"
 #include "recvparser.hpp"
 #include "proto.h"
 #include <functional>
@@ -87,8 +87,8 @@ private:
 
     QList<cam_params_t> readCameraList();
 
-    QVector<cam_logger_vlc*>   loggers;
-    cam_logger_vlc* cam_monitor = nullptr;
+    QVector<cam_logger*>   loggers;
+    cam_logger* cam_monitor = nullptr;
     QWidget*   m_camWindow = nullptr;
     void onStartMon();
     void onStopMon();

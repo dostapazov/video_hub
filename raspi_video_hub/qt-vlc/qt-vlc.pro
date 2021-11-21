@@ -41,6 +41,7 @@ LIBS += -L/usr/X11/lib -lX11
 }
 
 SOURCES += recorder_main.cpp\
+	cam_logger.cpp \
 	fan_control.cpp \
 		mainwindow.cpp \
 	appconfig.cpp \
@@ -50,17 +51,16 @@ SOURCES += recorder_main.cpp\
 	filedeleterthread.cpp \
 	recvparser.cpp \
 	vlclasses.cpp \
-	main_window_uart.cpp \
-	cam_logger_vlc.cpp
+	main_window_uart.cpp
 
 HEADERS  += mainwindow.h \
 	appconfig.h \
+	cam_logger.h \
 	crc.h \
 	proto.h \
 	applog.h \
 	filedeleterthread.h \
 	recvparser.hpp \
-	vlcclasses.hpp \
-	cam_logger_vlc.h
+	vlcclasses.hpp
 
 FORMS    += mainwindow.ui

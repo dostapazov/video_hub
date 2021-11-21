@@ -96,12 +96,12 @@ QString     appConfig::get_mount_point()
     return value("VLOG/MountPoint").toString();
 }
 
-QString     appConfig::get_log_folder()
+QString     appConfig::get_vlog_folder()
 {
     return value("VLOG/Folder").toString();
 }
 
-void        appConfig::set_log_folder(const QString& folder)
+void        appConfig::set_vlog_folder(const QString& folder)
 {
     setValue("VLOG/Folder", folder);
 }

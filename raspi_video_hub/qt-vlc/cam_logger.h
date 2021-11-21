@@ -28,17 +28,17 @@ struct cam_params_t
     bool disabled = false;
 };
 
-class cam_logger_vlc : public QObject
+class cam_logger : public QObject
 {
     Q_OBJECT
-    cam_logger_vlc(QObject* parent = Q_NULLPTR): QObject(parent) {}
-    cam_logger_vlc(const cam_logger_vlc& other): QObject(other.parent()) {}
-    cam_logger_vlc& operator = (const cam_logger_vlc&) {return *this;}
+    cam_logger(QObject* parent = Q_NULLPTR): QObject(parent) {}
+    cam_logger(const cam_logger& other): QObject(other.parent()) {}
+    cam_logger& operator = (const cam_logger&) {return *this;}
 
 public:
 
-    explicit       cam_logger_vlc(const cam_params_t& aParams, QObject* parent = nullptr);
-    ~cam_logger_vlc();
+    explicit       cam_logger(const cam_params_t& aParams, QObject* parent = nullptr);
+    ~cam_logger();
     int      get_id    () const   {return   m_params.id;}
     const QString  get_name  () const   {return m_params.name;}
     const QString  get_mrl   () const   {return m_params.mrl;}

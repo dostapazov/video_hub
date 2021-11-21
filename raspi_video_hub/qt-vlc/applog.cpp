@@ -16,7 +16,7 @@ appLog::appLog(QString logFileName, int _level, QObject* parent) : QObject(paren
 
 void appLog::logWrite(int log_level, QString message)
 {
-    if (level <= log_level)
+    if (level > log_level)
         return;
 
     qDebug().noquote() << QString("level %1 : ").arg(log_level) << message;

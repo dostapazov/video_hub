@@ -157,7 +157,7 @@ void MainWindow::load_config()
     QList<cam_params_t> cams = readCameraList();
     for ( cam_params_t& cp : cams)
     {
-        loggers.append(new cam_logger_vlc(cp));
+        loggers.append(new cam_logger(cp));
         QString str = tr("append camera ID=%1 %2 %3").arg(cp.id).arg(cp.name).arg(cp.mrl);
         appLog::write(0, str);
     }
@@ -175,7 +175,7 @@ void MainWindow::load_config()
 
 void MainWindow::deinitLoggers()
 {
-    foreach (cam_logger_vlc* cl, this->loggers)
+    foreach (cam_logger* cl, this->loggers)
     {
         cl->stop();
         cl->deleteLater();
@@ -236,7 +236,7 @@ bool MainWindow::check_media_drive()
 {
     QString strPath =  appConfig::get_mount_point();
     addFolder(strPath, whoami());
-    addFolder(strPath, appConfig::get_log_folder());
+    addFolder(strPath, appConfig::get_vlog_folder());
     appLog::write(0,  tr("check existing streamig dir %1").arg(strPath));
 
     if ( QDir(strPath).exists() )
@@ -278,7 +278,7 @@ void MainWindow::onCamSwitch(quint8 camId)
     {
         appState.camId = camId;
         appConfig::set_mon_camera(camId);
-        const cam_logger_vlc* clogger = loggers.at(camId);
+        const cam_logger* clogger = loggers.at(camId);
         QString str = tr("Monitor switch to camera (%1) %2").arg(int(camId)).arg(clogger->get_mrl());
         qDebug() << str;
         appLog::write(6, str);
@@ -299,11 +299,11 @@ void MainWindow::startCamMonitor()
     //m_camWindow = new QOpenGLWidget;
     m_camWindow = new QWidget;
 
-    cam_monitor = new cam_logger_vlc({-1, "Monitor logger", ""});
-    connect(cam_monitor, &cam_logger_vlc::onPlayStart, this, &MainWindow::onStartMon);
-    connect(cam_monitor, &cam_logger_vlc::onPlayStop, this, &MainWindow::onStopMon);
-    connect(cam_monitor, &cam_logger_vlc::onError, this, &MainWindow::onMonitorError);
-    connect(cam_monitor, &cam_logger_vlc::framesChanged, this, &MainWindow::onFramesChanged);
+    cam_monitor = new cam_logger({-1, "Monitor logger", ""});
+    connect(cam_monitor, &cam_logger::onPlayStart, this, &MainWindow::onStartMon);
+    connect(cam_monitor, &cam_logger::onPlayStop, this, &MainWindow::onStopMon);
+    connect(cam_monitor, &cam_logger::onError, this, &MainWindow::onMonitorError);
+    connect(cam_monitor, &cam_logger::framesChanged, this, &MainWindow::onFramesChanged);
 
     int cam_id = std::max(appConfig::get_mon_camera(), 0);
     emit cam_switch(static_cast<quint8>(cam_id));
@@ -317,7 +317,7 @@ void MainWindow::onFramesChanged(int frames)
 
 void MainWindow::onStartMon()
 {
-    const cam_logger_vlc* clogger = loggers.at(appState.camId);
+    const cam_logger* clogger = loggers.at(appState.camId);
     QString str = QString("Play from  %1").arg(clogger->get_name());
     label->setText(str);
     FrameNo->setText("-");
@@ -333,7 +333,7 @@ void MainWindow::onStartMon()
 
 void MainWindow::onStopMon()
 {
-    const cam_logger_vlc* clogger = loggers.at(appState.camId);
+    const cam_logger* clogger = loggers.at(appState.camId);
     QString str = QString("%1 lost connection").arg(clogger->get_name());
     appLog::write(6, str);
     label->setText(str);
@@ -355,7 +355,7 @@ void MainWindow::activateSelf()
 
 void MainWindow::onMonitorError()
 {
-    const cam_logger_vlc* clogger = loggers.at(appState.camId);
+    const cam_logger* clogger = loggers.at(appState.camId);
     if (m_camWindow->isVisible())
     {
         QString str = QString("Camera %1 not respond").arg(clogger->get_name());
@@ -373,7 +373,7 @@ void MainWindow::startLoggers()
         start_file_deleter();
         int timeDuration = appConfig::get_time_duration();
 
-        foreach (cam_logger_vlc* cl, loggers)
+        foreach (cam_logger* cl, loggers)
         {
             cl->startStreaming(m_vlog_root, timeDuration);
         }
