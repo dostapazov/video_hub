@@ -151,7 +151,6 @@ int cam_logger::setupMediaForStreaming(vlc::vlc_media* media)
     QString fileName = get_file_name(dtm);
     m_streamFiles.append(fileName);
     int time_len      = get_time_interval(dtm);
-    media->add_option(":no-audio");
     media->add_option(":no-overlay");
     media->add_option(":rtsp-timeout=5000");
     media->add_option(":sout-mp4-faststart");
@@ -185,26 +184,24 @@ vlc::vlc_media*  cam_logger::create_media()
     vlc::vlc_media* media   = new vlc::vlc_media;
     if (media)
     {
-        if (media->open_location(get_mrl().toLocal8Bit().constData()))
+        media->add_option(":no-audio");
+        if (isStreaming())
         {
-            media->add_option(":no-audio");
-            media->add_option(":no-overlay");
-            if (isStreaming())
-            {
-                str = QString("%1 create next media ").arg(get_name());
-                m_file_timelen = setupMediaForStreaming(media);
-                div_t t     = div(m_file_timelen, 1000);
-                str += QString(" interval %1. %2").arg(t.quot).arg(t.rem);
-            }
-            else
-                media->add_option(":rtsp-timeout=3000");
+            str = QString("%1 create next media ").arg(get_name());
+            m_file_timelen = setupMediaForStreaming(media);
+            div_t t     = div(m_file_timelen, 1000);
+            str += QString(" interval %1. %2").arg(t.quot).arg(t.rem);
         }
         else
+            media->add_option(":rtsp-timeout=3000");
+
+        if (!media->open_location(get_mrl().toLocal8Bit().constData()))
         {
             str = QString("%1 error open  ").arg(get_name()).arg(get_mrl());
+            appLog::write(0, str);
 
         }
-        appLog::write(0, str);
+
     }
     return media;
 }
@@ -271,6 +268,8 @@ void cam_logger::OnPlayerPlaying(vlc::vlc_player* player)
         cutTimer.setInterval(m_file_timelen);
         cutTimer.start();
     }
+    else
+        m_player->set_fullscreen(true);
 
     startPlayWatchDog();
     emit onPlayStart();

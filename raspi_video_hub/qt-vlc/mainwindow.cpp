@@ -325,7 +325,7 @@ void MainWindow::onStartMon()
 #else
 
 #endif
-    cam_monitor->getPlayer()->set_fullscreen(true);
+    //cam_monitor->getPlayer()->set_fullscreen(true);
 
 
 }
