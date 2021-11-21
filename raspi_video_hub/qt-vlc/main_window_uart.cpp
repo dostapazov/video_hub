@@ -144,8 +144,8 @@ void MainWindow::parseReceive()
                                 break;
                         }
                     }
-                    else
-                        appLog::write(5, tr("UART different devId [self %1] packet %2 type %3 size %4").arg(appConfig::value("DEV/ID").toUInt()).arg(int(header.devId)).arg(int(header.pckType)).arg(int(header.devId)).arg(int(header.size)));
+                    //else
+                    // appLog::write(5, tr("UART different devId [self %1] packet %2 type %3 size %4").arg(appConfig::value("DEV/ID").toUInt()).arg(int(header.devId)).arg(int(header.pckType)).arg(int(header.devId)).arg(int(header.size)));
 
                     offset += header.size + sizeof(crc);
                 }
