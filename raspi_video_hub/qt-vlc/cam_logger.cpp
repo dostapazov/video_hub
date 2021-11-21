@@ -186,18 +186,21 @@ vlc::vlc_media*  cam_logger::create_media()
     vlc::vlc_media* media   = new vlc::vlc_media;
     if (media)
     {
-        media->add_option(":no-audio");
-        if (isStreaming())
+
+        if (media->open_location(get_mrl().toLocal8Bit().constData()))
         {
-            str = QString("%1 create next media ").arg(get_name());
-            m_file_timelen = setupMediaForStreaming(media);
-            div_t t     = div(m_file_timelen, 1000);
-            str += QString(" interval %1. %2").arg(t.quot).arg(t.rem);
+            media->add_option(":no-audio");
+            if (isStreaming())
+            {
+                str = QString("%1 create next media ").arg(get_name());
+                m_file_timelen = setupMediaForStreaming(media);
+                div_t t     = div(m_file_timelen, 1000);
+                str += QString(" interval %1. %2").arg(t.quot).arg(t.rem);
+            }
+            else
+                media->add_option(":rtsp-timeout=20000");
         }
         else
-            media->add_option(":rtsp-timeout=3000");
-
-        if (!media->open_location(get_mrl().toLocal8Bit().constData()))
         {
             str = QString("%1 error open  ").arg(get_name()).arg(get_mrl());
             appLog::write(0, str);
@@ -266,6 +269,7 @@ void cam_logger::OnPlayerPlaying(vlc::vlc_player* player)
     m_Playing = true;
     if (isStreaming())
     {
+        m_logger_player->set_drawable(0);
         cutTimer.stop();
         cutTimer.setInterval(m_file_timelen);
         cutTimer.start();

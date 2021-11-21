@@ -378,7 +378,7 @@ void MainWindow::startLoggers()
 
         foreach (cam_logger* cl, loggers)
         {
-            //cl->startStreaming(m_vlog_root, timeDuration);
+            cl->startStreaming(m_vlog_root, timeDuration);
         }
     }
     else
