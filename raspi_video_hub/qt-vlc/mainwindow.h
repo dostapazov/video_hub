@@ -41,8 +41,8 @@ Q_SIGNALS:
 
 private slots:
 
-    void onUARTread();
-    void parseReceive();
+//    void onUARTread();
+//    void parseReceive();
     void on_blink();
     void onCamSwitch(quint8 camId);
     void on_bTestUpdate_clicked();
@@ -50,6 +50,12 @@ private slots:
     void onMonitorError();
     void setSystemDateTime(QDateTime dt);
     void startLoggers();
+
+    void reqAppState();
+    void reqShutDown();
+    void reqUpdateExecuteble();
+
+    void errorPacket(QByteArray packet);
 
 private:
     void closeEvent(QCloseEvent* event) override;
@@ -117,6 +123,8 @@ private:
     void deinitFileDeleter();
     void activateSelf();
     void initStartLoggers();
+    void initRecvParser(QIODevice* io);
+
 };
 
 #ifndef DESKTOP_DEBUG_BUILD

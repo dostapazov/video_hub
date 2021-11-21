@@ -52,7 +52,13 @@ void  RecvParser::handleRecv(const QByteArray& rxData)
             {
                 auto handler = m_handlers.find(hdr->pckType);
                 if (handler != m_handlers.end())
+                {
                     handler.value()(hdr);
+                }
+                else
+                {
+                    emit errorPacket(m_buffer.left(packetSize(hdr)));
+                }
 
             }
             m_buffer.remove(0, packetSize(hdr));
@@ -100,21 +106,31 @@ void RecvParser::onCamSwitch(const PCK_Header_t* hdr)
 {
     if (hdr->size == sizeof (quint8))
     {
-        const quint8* cam_id = reinterpret_cast<const quint8*>(hdr) + sizeof(*hdr);
-        emit camSwitch(cam_id[0]);
+        const quint8* p_cam_id = reinterpret_cast<const quint8*>(hdr) + sizeof(*hdr);
+        quint8 cam_id = p_cam_id[0];
+        if (cam_id)
+        {
+            emit camSwitch(cam_id - 1);
+            return;
+        }
     }
+    emit errorPacket(m_buffer.left(packetSize(hdr)));
 }
 
 void RecvParser::onShutdown(const PCK_Header_t* hdr)
 {
     if (!hdr->size)
         emit shutDown();
+    else
+        emit errorPacket(m_buffer.left(packetSize(hdr)));
 }
 
 void RecvParser::onAppState(const PCK_Header_t* hdr)
 {
     if (!hdr->size)
         emit appState();
+    else
+        emit errorPacket(m_buffer.left(packetSize(hdr)));
 }
 
 QDateTime RecvParser::fromPacket(const PCK_DateTime_t* src)
@@ -134,11 +150,15 @@ void RecvParser::onSetDateTime(const PCK_Header_t* hdr)
     {
         emit setDateTime(fromPacket(dtm));
     }
+    else
+        emit errorPacket(m_buffer.left(packetSize(hdr)));
 }
 
 void RecvParser::onUpdateExecutable(const PCK_Header_t* hdr)
 {
     if (!hdr->size)
         emit updateExecutable();
+    else
+        emit errorPacket(m_buffer.left(packetSize(hdr)));
 }
 
