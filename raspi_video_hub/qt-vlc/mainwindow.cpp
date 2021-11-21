@@ -38,20 +38,21 @@ void MainWindow::initBlinker()
     blinker.start    ();
 }
 
+
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent)
 
 {
     setupUi(this);
-    appState = PCK_STATE_t {0xFF, 77, 777};
     devId = appConfig::get_devid();
     connect(this, &MainWindow::cam_switch, this, &MainWindow::onCamSwitch, Qt::ConnectionType::QueuedConnection);
+
+    initStartLoggers();
     init_gpio  ();
     initBlinker();
     init_libvlc      ();
     init_uart        ();
     load_config      ();
-    start_loggers();
 
 #if defined (DESKTOP_DEBUG_BUILD)
     show();
@@ -66,10 +67,11 @@ MainWindow::~MainWindow()
     deinit_all();
 }
 
-void MainWindow::showEvent(QShowEvent* event)
+void MainWindow::initStartLoggers()
 {
-    QMainWindow::showEvent(event);
-    startCamMonitor();
+    connect(&starLoggersTimer, &QTimer::timeout, this, &MainWindow::startLoggers);
+    starLoggersTimer.setSingleShot(true);
+    starLoggersTimer.setInterval(1000);
 }
 
 void MainWindow::init_libvlc()
@@ -78,6 +80,15 @@ void MainWindow::init_libvlc()
     vlc::vlc_instance::get_instance(argc, vlcArgs);
     QString vlc_ver = vlc::vlc_instance::get_version();
     appLog::write(0, vlc_ver);
+}
+
+
+
+void MainWindow::showEvent(QShowEvent* event)
+{
+    QMainWindow::showEvent(event);
+    startCamMonitor();
+    startLoggers();
 }
 
 void MainWindow::start_file_deleter()
@@ -111,13 +122,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
 QList<cam_params_t> MainWindow::readCameraList()
 {
     QList<cam_params_t> cams;
-//#ifdef DESKTOP_DEBUG_BUILD
-//    cams.append({1, tr("IPCam100"), tr("rtsp://192.168.0.100:554/media/video1"), false});
-//    cams.append({1, tr("IPCam101"), tr("rtsp://192.168.0.101:554/media/video1"), false});
-//#else
-
     cam_params_t cam_param;
-
     QStringList camList = appConfig::get_cam_list();
     std::sort(camList.begin(), camList.end());
     foreach (QString camName, camList)
@@ -134,7 +139,16 @@ QList<cam_params_t> MainWindow::readCameraList()
             cams.append(cam_param);
         }
     }
-//#endif
+
+#ifdef DESKTOP_DEBUG_BUILD
+    if (!cams.count())
+    {
+        cams.append({1, tr("IPCam100"), tr("rtsp://192.168.0.100:554/media/video1"), false});
+        cams.append({1, tr("IPCam101"), tr("rtsp://192.168.0.101:554/media/video1"), false});
+    }
+#endif
+
+
     return cams;
 }
 
@@ -233,8 +247,6 @@ bool MainWindow::check_media_drive()
     }
     else
     {
-        appLog::write(0, tr("directory NOT exist: write videolog disabled "));
-
         m_vlog_root.clear();
     }
     bool logEnabled = !m_vlog_root.isEmpty();
@@ -310,7 +322,8 @@ void MainWindow::onStartMon()
     label->setText(str);
     FrameNo->setText("-");
 #if defined DESKTOP_DEBUG_BUILD
-    m_camWindow->show();
+    m_camWindow->show
+    ();
 #else
     m_camWindow->showFullScreen();
 #endif
@@ -352,8 +365,9 @@ void MainWindow::onMonitorError()
     cam_monitor->startMonitoring(m_camWindow, clogger->get_mrl());
 }
 
-void MainWindow::start_loggers()
+void MainWindow::startLoggers()
 {
+    starLoggersTimer.stop();
     if (m_vlog_root.isEmpty() && check_media_drive())
     {
         start_file_deleter();
@@ -364,6 +378,8 @@ void MainWindow::start_loggers()
             cl->startStreaming(m_vlog_root, timeDuration);
         }
     }
+    else
+        starLoggersTimer.start();
 }
 
 void MainWindow::init_gpio()

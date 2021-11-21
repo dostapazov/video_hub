@@ -48,8 +48,8 @@ private slots:
     void on_bTestUpdate_clicked();
     void onFramesChanged(int frames);
     void onMonitorError();
-
     void setSystemDateTime(QDateTime dt);
+    void startLoggers();
 
 private:
     void closeEvent(QCloseEvent* event) override;
@@ -71,7 +71,6 @@ private:
     void deinitLoggers();
     void deinit_all ();
 
-    void start_loggers();
     void start_file_deleter();
     void readCPUtemper();
     QString whoami();
@@ -96,9 +95,11 @@ private:
 
     QTimer blinker ;
     QTimer parser  ;
+    QTimer starLoggersTimer ;
     RecvParser recvParser;
+    PCK_STATE_t        appState = {0xFF, 77, 777};
 
-    int                led_state = 1;
+    bool               led_state = true;
 
     QByteArray         rxBuf;
     QSerialPort*       uart = Q_NULLPTR;
@@ -107,7 +108,6 @@ private:
 
 
     int             cam_time_synchro = -1;
-    PCK_STATE_t     appState;
     static const char* const vlcArgs[];
     static bool    do_rename_recorder  ();
     static QString get_update_file_name();
@@ -116,6 +116,7 @@ private:
     void deinitMonitor();
     void deinitFileDeleter();
     void activateSelf();
+    void initStartLoggers();
 };
 
 #ifndef DESKTOP_DEBUG_BUILD
