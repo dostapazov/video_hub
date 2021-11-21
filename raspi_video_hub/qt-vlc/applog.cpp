@@ -10,7 +10,7 @@ appLog::appLog(QString logFileName, int _level, QObject* parent) : QObject(paren
     QFileInfo info(logFileName);
     logFile.setFileName(info.absoluteFilePath());
     this->level = _level;
-    logWrite(0, "--- Starting ---");
+    logWrite(0, "--- Starting  V2.0 ---");
     logWrite(0, QString("level %1 : ").arg(_level));
 }
 
