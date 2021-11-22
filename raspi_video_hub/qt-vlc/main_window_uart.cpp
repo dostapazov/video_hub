@@ -65,8 +65,8 @@ void MainWindow::deinitUART()
 
 void MainWindow::errorPacket(QByteArray packet, bool crc)
 {
-    appLog::write(LOG_LEVEL_PARSER, QString("Wrong packet :") + QString(crc ? "error CRC" : ""));
-    appLog::write(LOG_LEVEL_PARSER, packet.toHex().toUpper());
+    appLog::write(LOG_LEVEL_UART_ERROR, QString("Wrong packet :") + QString(crc ? "error CRC" : ""));
+    appLog::write(LOG_LEVEL_UART_ERROR, packet.toHex().toUpper());
 }
 
 void MainWindow::setSystemDateTime(QDateTime dt)

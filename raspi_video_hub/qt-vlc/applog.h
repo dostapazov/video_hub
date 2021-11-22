@@ -28,6 +28,7 @@ constexpr int LOG_LEVEL_VLC = 4;
 constexpr int LOG_LEVEL_CAM_MON = 8;
 constexpr int LOG_LEVEL_PARSER = 16;
 constexpr int LOG_LEVEL_FAN_CTRL = 32;
+constexpr int LOG_LEVEL_UART_ERROR = 64;
 constexpr int LOG_LEVEL_ALWAYS = 0;
 
 #endif // APPLOG_H
