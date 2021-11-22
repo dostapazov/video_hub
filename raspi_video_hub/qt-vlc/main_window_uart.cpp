@@ -71,10 +71,11 @@ void MainWindow::errorPacket(QByteArray packet, bool crc)
 
 void MainWindow::setSystemDateTime(QDateTime dt)
 {
-    QString dateTimeString = QString("sudo date -s %1").arg(dt.toString("\'yyyy-MM-dd hh:mm\'"));
+    QString dateTimeString = QString("sudo date -s \"%1\"").arg(dt.toString("yyyy-MM-dd hh:mm"));
     int res = system(dateTimeString.toStdString().c_str());
     Q_UNUSED(res)
-    appLog::write(LOG_LEVEL_PARSER, QString("Accepted new date/time: %1").arg(dt.toString()));
+    appLog::write(LOG_LEVEL_PARSER, QString("Accepted new date/time: %1 : result = %2").arg(dt.toString()).arg(res));
+    //appLog::write(LOG_LEVEL_PARSER, QString("command %1").arg(dateTimeString));
 }
 
 

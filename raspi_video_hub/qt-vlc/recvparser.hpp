@@ -48,6 +48,7 @@ private:
     using  packet_handler_f = void (RecvParser::*)(const PCK_Header_t*);
 
     packet_handler_f m_handlers[PCT_MAX_COMMAND];
+    quint8 m_currentCamId = 255;
 
 
 };

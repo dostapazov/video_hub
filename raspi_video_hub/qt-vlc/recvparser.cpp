@@ -111,8 +111,11 @@ void RecvParser::onCamSwitch(const PCK_Header_t* hdr)
     {
         const quint8* p_cam_id = reinterpret_cast<const quint8*>(hdr) + sizeof(*hdr);
         quint8 cam_id = p_cam_id[0];
-        if (cam_id)
+        if (cam_id && m_currentCamId != cam_id)
+        {
+            m_currentCamId = cam_id;
             emit camSwitch(cam_id - 1);
+        }
         return;
     }
     emit errorPacket(m_buffer.left(packetSize(hdr)));
