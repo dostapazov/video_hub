@@ -88,8 +88,12 @@ const PCK_Header_t* RecvParser::hasPacket()
 
     if (m_buffer.size() < packetSize(hdr))
     {
-        m_buffer.remove(0, 1);
-        return hasPacket();
+        if (hdr->pckType >= PCK_Type::PCT_MAX_COMMAND || hdr->size > PAKET_MAX_DATA_SIZE)
+        {
+            m_buffer.remove(0, 1);
+            return hasPacket();
+        }
+        return nullptr;
     }
 
     if (hdr->pckType >= PCK_Type::PCT_MAX_COMMAND || hdr->size > PAKET_MAX_DATA_SIZE)

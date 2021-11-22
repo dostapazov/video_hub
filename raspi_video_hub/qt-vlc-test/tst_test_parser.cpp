@@ -44,6 +44,7 @@ private slots:
     void DateTimeShouldSilenceWhenWrongDataSize();
     void ParserShouldSilenceWhenWrongDevId();
     void ParserSholdFilterGarbageData();
+    void ReceivePer1byteShouldCorrectHandled();
 };
 
 test_parser::test_parser()
@@ -178,6 +179,33 @@ void test_parser::DateTimeShouldEmitEvent()
     QCOMPARE(args.takeFirst().toDateTime(), now);
 
 }
+
+void test_parser::ReceivePer1byteShouldCorrectHandled()
+{
+    QSignalSpy spy(&cut, &RecvParser::setDateTime);
+    // setyp date time
+    QByteArray data(sizeof (PCK_DateTime_t), Qt::Uninitialized);
+    PCK_DateTime_t* dtm = reinterpret_cast<PCK_DateTime_t*>(data.data());
+    QDateTime now = QDateTime::currentDateTime();
+
+    // remove msecs because PCK_DateTime_t have't it
+    now.setTime(now.time().addMSecs(-now.time().msec()));
+
+    fromQDateTime(now, *dtm);
+    QByteArray packet = makePck(PCT_DATETIME, DEV_ID, data);
+
+    for (int i = 0; i < packet.size(); i++)
+    {
+        cut.handleRecv(QByteArray(packet.data() + i, 1));
+    }
+    QCOMPARE(cut.bufferSize(), 0);
+    QCOMPARE(spy.count(), 1);
+    QList<QVariant> args = spy.takeFirst();
+    QCOMPARE(args.count(), 1);
+    QCOMPARE(args.takeFirst().toDateTime(), now);
+
+}
+
 
 void test_parser::DateTimeShouldSilenceWhenWrongDataSize()
 {
