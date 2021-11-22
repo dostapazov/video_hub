@@ -1,0 +1,12 @@
+core_cm3.h:1616:22:NVIC_SystemReset	4	static
+app.c:57:17:pc_link_pack_transmit	24	static
+app.c:108:16:pc_link_pack_process	40	static
+app.c:181:10:__tcp_rx_data_add	32	static
+app.c:193:5:__tcp_rx_sync_kadr	32	static
+app.c:222:5:tcp_handle_kadrs	32	static
+app.c:259:7:tcp_handle_data	32	static
+app.c:318:6:raspi_check_st	24	static
+app.c:363:6:but_rst_ctrl	16	static
+app.c:402:6:app_init	16	static
+app.c:432:6:app_step	8	static
+app.c:501:6:HAL_GPIO_EXTI_Callback	16	static

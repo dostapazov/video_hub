@@ -52,9 +52,6 @@ private slots:
     void startLoggers();
 
     void reqAppState();
-    void reqShutDown();
-    void reqUpdateExecuteble();
-
     void errorPacket(QByteArray packet, bool crc);
     void onSwitchTimer();
 

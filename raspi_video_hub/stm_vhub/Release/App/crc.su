@@ -1,0 +1,6 @@
+crc.c:79:10:reverse_32	0	static
+crc.c:103:10:crc32	0	static
+crc.c:176:10:crc32_ether	24	static
+crc.c:224:15:crc8	0	static
+crc.c:245:9:crc8_1wire	16	static
+crc.c:266:10:modbus_crc_rtu	20	static

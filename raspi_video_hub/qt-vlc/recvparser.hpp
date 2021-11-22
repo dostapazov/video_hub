@@ -26,7 +26,6 @@ signals:
     void shutDown();
     void appState();
     void setDateTime(QDateTime);
-    void updateExecutable();
     void errorPacket(QByteArray, bool crcError = false);
 protected:
     void  handleRecv(const QByteArray& rxData);
@@ -40,7 +39,6 @@ private:
     void onShutdown(const PCK_Header_t* hdr);
     void onAppState(const PCK_Header_t* hdr);
     void onSetDateTime(const PCK_Header_t* hdr);
-    void onUpdateExecutable(const PCK_Header_t* hdr);
     static QDateTime fromPacket(const PCK_DateTime_t* src);
 
 

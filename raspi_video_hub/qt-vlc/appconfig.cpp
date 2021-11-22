@@ -129,7 +129,7 @@ int         appConfig::get_log_level()
     QString level = value(key).toString();
     if (level.isEmpty())
     {
-        level = "100";
+        level = "65535";
         setValue(key, level.toInt());
     }
     return level.toInt();

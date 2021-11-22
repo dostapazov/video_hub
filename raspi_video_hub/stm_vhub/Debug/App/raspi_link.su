@@ -1,0 +1,5 @@
+raspi_link.c:27:6:raspi_link_init	16	static
+raspi_link.c:33:6:raspi_link_swith_cam	32	static
+raspi_link.c:56:6:raspi_link_set_time	40	static
+raspi_link.c:82:6:raspi_link_set_cam	16	static
+raspi_link.c:103:6:raspi_link_step	8	static

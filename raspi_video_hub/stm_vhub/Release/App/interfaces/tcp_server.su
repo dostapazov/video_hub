@@ -1,0 +1,15 @@
+tcp_server.c:243:7:tcp_server_poll	0	static
+tcp_server.c:195:7:tcp_server_recv	32	static
+tcp_server.c:48:6:tcp_server_init	24	static
+tcp_server.c:317:20:socket_allock	8	static
+tcp_server.c:154:7:tcp_server_accept	16	static
+tcp_server.c:336:6:socket_free	8	static
+tcp_server.c:128:6:tcp_server_connection_close	0	static
+tcp_server.c:229:6:tcp_server_error	0	static
+tcp_server.c:285:7:tcp_server_send_tss	24	static
+tcp_server.c:97:7:tcp_server_send_data	16	static
+tcp_server.c:262:7:tcp_server_sent	0	static
+tcp_server.c:135:6:tsp_server_close_all_connections	8	static
+tcp_server.c:355:6:HAL_ETH_ErrorCallback	0	static
+tcp_server.c:360:9:ethernet_get_link	16	static
+tcp_server.c:402:6:tcp_server_svc	8	static

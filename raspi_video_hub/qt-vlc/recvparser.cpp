@@ -13,8 +13,7 @@ RecvParser::RecvParser(QObject* parent)
         pair(PCT_SHUTDOWN, std::bind(&RecvParser::onShutdown, this, p::_1)),
         pair(PCT_CAM_SWITCH, std::bind(&RecvParser::onCamSwitch, this, p::_1)),
         pair(PCT_DATETIME, std::bind(&RecvParser::onSetDateTime, this, p::_1)),
-        pair(PCT_STATE, std::bind(&RecvParser::onAppState, this, p::_1)),
-        pair(PCT_UPDATE_EXECUTALE, std::bind(&RecvParser::onUpdateExecutable, this, p::_1))
+        pair(PCT_STATE, std::bind(&RecvParser::onAppState, this, p::_1))
     }
     );
 }
@@ -153,14 +152,6 @@ void RecvParser::onSetDateTime(const PCK_Header_t* hdr)
     {
         emit setDateTime(fromPacket(dtm));
     }
-    else
-        emit errorPacket(m_buffer.left(packetSize(hdr)));
-}
-
-void RecvParser::onUpdateExecutable(const PCK_Header_t* hdr)
-{
-    if (!hdr->size)
-        emit updateExecutable();
     else
         emit errorPacket(m_buffer.left(packetSize(hdr)));
 }

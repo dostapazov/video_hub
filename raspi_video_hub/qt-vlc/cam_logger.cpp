@@ -196,6 +196,7 @@ vlc::vlc_media*  cam_logger::create_media()
                 m_file_timelen = setupMediaForStreaming(media);
                 div_t t     = div(m_file_timelen, 1000);
                 str += QString(" interval %1. %2").arg(t.quot).arg(t.rem);
+                appLog::write(LOG_LEVEL_VLC, str);
             }
             else
                 media->add_option(":rtsp-timeout=20000");
@@ -203,7 +204,7 @@ vlc::vlc_media*  cam_logger::create_media()
         else
         {
             str = QString("%1 error open  ").arg(get_name()).arg(get_mrl());
-            appLog::write(0, str);
+            appLog::write(LOG_LEVEL_VLC, str);
 
         }
 
@@ -256,7 +257,7 @@ void cam_logger::OnPlayerStopped(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
     QString str = QString("%1 stopped").arg(get_name());
-    appLog::write(0, str);
+    appLog::write(LOG_LEVEL_VLC, str);
     m_Playing = false;
     emit onPlayStop();
 }
@@ -265,7 +266,7 @@ void cam_logger::OnPlayerPlaying(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
     QString str = QString("%1 playing").arg(get_name());
-    appLog::write(0, str);
+    appLog::write(LOG_LEVEL_VLC, str);
     m_Playing = true;
     if (isStreaming())
     {
@@ -346,7 +347,7 @@ void cam_logger::playChecker()
 
     if (m_Playing)
     {
-        appLog::write(0, QString("%1 not respond").arg(get_name()));
+        appLog::write(LOG_LEVEL_VLC, QString("%1 not respond").arg(get_name()));
     }
 
     emit onError();

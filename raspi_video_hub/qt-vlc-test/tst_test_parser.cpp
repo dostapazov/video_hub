@@ -40,8 +40,6 @@ private slots:
     void CamSwitchShouldSilenceWhenWrongDataSize();
     void AppStateShouldEmitEvent();
     void AppStateShouldSilenceWhenWrongDataSize();
-    void UpdateExucutableShouldEmitEvent();
-    void UpdateExucutableShouldSilenceWhenWrongDataSize();
     void DateTimeShouldEmitEvent();
     void DateTimeShouldSilenceWhenWrongDataSize();
     void ParserShouldSilenceWhenWrongDevId();
@@ -146,24 +144,6 @@ void test_parser::AppStateShouldSilenceWhenWrongDataSize()
     QCOMPARE(cut.bufferSize(), 0);
     QCOMPARE(spy.count(), 0);
 
-}
-
-void test_parser::UpdateExucutableShouldEmitEvent()
-{
-    QSignalSpy spy(&cut, &RecvParser::updateExecutable);
-    QByteArray packet = makePck(PCT_UPDATE_EXECUTALE, DEV_ID, QByteArray());
-    cut.handleRecv(packet);
-    QCOMPARE(cut.bufferSize(), 0);
-    QCOMPARE(spy.count(), 1);
-}
-
-void test_parser::UpdateExucutableShouldSilenceWhenWrongDataSize()
-{
-    QSignalSpy spy(&cut, &RecvParser::updateExecutable);
-    QByteArray packet = makePck(PCT_UPDATE_EXECUTALE, DEV_ID, QByteArray("abcde"));
-    cut.handleRecv(packet);
-    QCOMPARE(cut.bufferSize(), 0);
-    QCOMPARE(spy.count(), 0);
 }
 
 void fromQDateTime(const QDateTime& src, PCK_DateTime_t& dtm)
