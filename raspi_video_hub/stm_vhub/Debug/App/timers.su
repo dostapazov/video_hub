@@ -1,0 +1,3 @@
+timers.c:16:10:timers_get_finish_time	16	static
+timers.c:27:10:timers_get_time_left	24	static
+timers.c:45:10:timers_diff_tick	16	static

@@ -52,9 +52,6 @@ private slots:
     void startLoggers();
 
     void reqAppState();
-    void reqShutDown();
-    void reqUpdateExecuteble();
-
     void errorPacket(QByteArray packet, bool crc);
     void onSwitchTimer();
 
@@ -94,7 +91,6 @@ private:
 
     QVector<cam_logger*>   loggers;
     cam_logger* cam_monitor = nullptr;
-    QWidget*   m_camWindow = nullptr;
     void onStartMon();
     void onStopMon();
 
@@ -125,6 +121,7 @@ private:
     void initStartLoggers();
     void initRecvParser(QIODevice* io);
 
+    void initCamMonitor();
 };
 
 #ifndef DESKTOP_DEBUG_BUILD

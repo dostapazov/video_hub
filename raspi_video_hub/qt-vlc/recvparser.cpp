@@ -5,19 +5,13 @@
 RecvParser::RecvParser(QObject* parent)
     : QObject{parent}
 {
-    using pair = std::pair<quint8, packet_handler_f>;
-    namespace p = std::placeholders;
 
-    m_handlers = PacketHandlers(
-    {
-        pair(PCT_SHUTDOWN, std::bind(&RecvParser::onShutdown, this, p::_1)),
-        pair(PCT_CAM_SWITCH, std::bind(&RecvParser::onCamSwitch, this, p::_1)),
-        pair(PCT_DATETIME, std::bind(&RecvParser::onSetDateTime, this, p::_1)),
-        pair(PCT_STATE, std::bind(&RecvParser::onAppState, this, p::_1)),
-        pair(PCT_UPDATE_EXECUTALE, std::bind(&RecvParser::onUpdateExecutable, this, p::_1))
-    }
-    );
+    m_handlers[PCT_SHUTDOWN] = &RecvParser::onShutdown;
+    m_handlers[PCT_CAM_SWITCH] = &RecvParser::onCamSwitch;
+    m_handlers[PCT_DATETIME] = &RecvParser::onSetDateTime;
+    m_handlers[PCT_STATE] = &RecvParser::onAppState;
 }
+
 
 void RecvParser::setIoDevice(QIODevice* io)
 {
@@ -50,10 +44,10 @@ void  RecvParser::handleRecv(const QByteArray& rxData)
         {
             if (hdr->devId == getDevId())
             {
-                auto handler = m_handlers.find(hdr->pckType);
-                if (handler != m_handlers.end())
+                if (hdr->pckType < PCT_MAX_COMMAND)
                 {
-                    handler.value()(hdr);
+                    packet_handler_f func = m_handlers[hdr->pckType];
+                    (this->*func)(hdr);
                 }
                 else
                 {
@@ -153,14 +147,6 @@ void RecvParser::onSetDateTime(const PCK_Header_t* hdr)
     {
         emit setDateTime(fromPacket(dtm));
     }
-    else
-        emit errorPacket(m_buffer.left(packetSize(hdr)));
-}
-
-void RecvParser::onUpdateExecutable(const PCK_Header_t* hdr)
-{
-    if (!hdr->size)
-        emit updateExecutable();
     else
         emit errorPacket(m_buffer.left(packetSize(hdr)));
 }

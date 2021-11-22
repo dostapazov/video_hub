@@ -1,6 +1,7 @@
 #include <QDebug>
 #include <QFileInfo>
 #include "applog.h"
+#include "appconfig.h"
 
 
 static appLog* applog = Q_NULLPTR;
@@ -19,7 +20,12 @@ void appLog::logWrite(int log_level, QString message)
     QString mess = QString("%1 |L-%2| %3 \n").arg(QDateTime::currentDateTime().toString()).arg(log_level, 3).arg(message);
     qDebug().noquote() << mess;
 
-    if (level > log_level)
+    // orgiginal variant
+    //if(level<log_level) return;
+
+    level = appConfig::get_log_level();
+
+    if ( log_level != LOG_LEVEL_ALWAYS &&  !(level & log_level) )
         return;
 
     logFile.open(QFile::Text | (logFile.exists() ? QFile::Append : QFile::WriteOnly));
@@ -29,7 +35,6 @@ void appLog::logWrite(int log_level, QString message)
         logFile.seek(0);
     }
     logFile.write(mess.toUtf8().constData());
-
     logFile.close();
 }
 
@@ -55,6 +60,7 @@ void appLog::deinit()
 {
     if (applog)
     {
+        write(LOG_LEVEL_ALWAYS, "--- Normal shutdown ---");
         applog->endLog();
         applog->deleteLater();
     }

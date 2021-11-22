@@ -3,7 +3,6 @@
 
 #include <QObject>
 #include <QIODevice>
-#include <QMap>
 #include "proto.h"
 
 
@@ -26,7 +25,6 @@ signals:
     void shutDown();
     void appState();
     void setDateTime(QDateTime);
-    void updateExecutable();
     void errorPacket(QByteArray, bool crcError = false);
 protected:
     void  handleRecv(const QByteArray& rxData);
@@ -40,7 +38,6 @@ private:
     void onShutdown(const PCK_Header_t* hdr);
     void onAppState(const PCK_Header_t* hdr);
     void onSetDateTime(const PCK_Header_t* hdr);
-    void onUpdateExecutable(const PCK_Header_t* hdr);
     static QDateTime fromPacket(const PCK_DateTime_t* src);
 
 
@@ -48,9 +45,9 @@ private:
     QByteArray m_buffer;
     quint8 m_devId = 0;
     quint8 m_signature = CU_SIGNATURE_;
-    using  packet_handler_f = std::function<void(const PCK_Header_t*)>;
-    using  PacketHandlers = QMap<quint8, packet_handler_f>;
-    PacketHandlers m_handlers;
+    using  packet_handler_f = void (RecvParser::*)(const PCK_Header_t*);
+
+    packet_handler_f m_handlers[PCT_MAX_COMMAND];
 
 
 };

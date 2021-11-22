@@ -53,6 +53,9 @@ MainWindow::MainWindow(QWidget* parent) :
     init_libvlc      ();
     init_uart        ();
     load_config      ();
+    initCamMonitor();
+    startCamMonitor();
+    startLoggers();
 
 #if defined (DESKTOP_DEBUG_BUILD)
     show();
@@ -79,7 +82,7 @@ void MainWindow::init_libvlc()
     int argc = sizeof(vlcArgs) / sizeof(vlcArgs[0]);
     vlc::vlc_instance::get_instance(argc, vlcArgs);
     QString vlc_ver = vlc::vlc_instance::get_version();
-    appLog::write(0, vlc_ver);
+    appLog::write(LOG_LEVEL_ALWAYS, QString("VLC-lib version ") + vlc_ver);
 }
 
 
@@ -87,8 +90,6 @@ void MainWindow::init_libvlc()
 void MainWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
-    startCamMonitor();
-    startLoggers();
 }
 
 void MainWindow::start_file_deleter()
@@ -159,7 +160,7 @@ void MainWindow::load_config()
     {
         loggers.append(new cam_logger(cp));
         QString str = tr("append camera ID=%1 %2 %3").arg(cp.id).arg(cp.name).arg(cp.mrl);
-        appLog::write(0, str);
+        appLog::write(LOG_LEVEL_DEBUG, str);
     }
 
 #ifdef DESKTOP_DEBUG_BUILD
@@ -187,11 +188,8 @@ void MainWindow::deinitLoggers()
 void MainWindow::deinitMonitor()
 {
     cam_monitor->stop();
-    cam_monitor->deleteLater();
+    delete cam_monitor;
     cam_monitor = nullptr;
-    if (m_camWindow)
-        m_camWindow->deleteLater();
-    m_camWindow = nullptr;
 }
 
 void MainWindow::deinitFileDeleter()
@@ -242,7 +240,7 @@ bool MainWindow::check_media_drive()
     if ( QDir(strPath).exists() )
     {
 
-        appLog::write(0, tr("Begin logging video"));
+        appLog::write(LOG_LEVEL_DEBUG, tr("Begin logging video"));
         m_vlog_root = strPath;
     }
     else
@@ -280,9 +278,8 @@ void MainWindow::onCamSwitch(quint8 camId)
         appConfig::set_mon_camera(camId);
         const cam_logger* clogger = loggers.at(camId);
         QString str = tr("Monitor switch to camera (%1) %2").arg(int(camId)).arg(clogger->get_mrl());
-        appLog::write(6, str);
-        m_camWindow->setWindowTitle(clogger->get_name());
-        cam_monitor->startMonitoring(m_camWindow, clogger->get_mrl());
+        appLog::write(LOG_LEVEL_CAM_MON, str);
+        cam_monitor->startMonitoring(clogger->get_mrl());
         str = QString("Wait data from %1").arg(clogger->get_name());
         label->setText(str);
         activateSelf();
@@ -292,19 +289,24 @@ void MainWindow::onCamSwitch(quint8 camId)
 
 
 
+void MainWindow::initCamMonitor()
+{
+    if (!cam_monitor)
+    {
+        cam_monitor = new cam_logger({-1, "Monitor logger", ""});
+        connect(cam_monitor, &cam_logger::onPlayStart, this, &MainWindow::onStartMon);
+        connect(cam_monitor, &cam_logger::onPlayStop, this, &MainWindow::onStopMon);
+        connect(cam_monitor, &cam_logger::onError, this, &MainWindow::onMonitorError);
+        connect(cam_monitor, &cam_logger::framesChanged, this, &MainWindow::onFramesChanged);
+        connect(&switchTimer, &QTimer::timeout, this, &MainWindow::onSwitchTimer);
+    }
+}
+
 void MainWindow::startCamMonitor()
 {
-    appLog::write(2, "start_cam_monitor ");
+    appLog::write(LOG_LEVEL_CAM_MON, "start_cam_monitor ");
     //m_camWindow = new QOpenGLWidget;
-    m_camWindow = new QWidget;
-
-    cam_monitor = new cam_logger({-1, "Monitor logger", ""});
-    connect(cam_monitor, &cam_logger::onPlayStart, this, &MainWindow::onStartMon);
-    connect(cam_monitor, &cam_logger::onPlayStop, this, &MainWindow::onStopMon);
-    connect(cam_monitor, &cam_logger::onError, this, &MainWindow::onMonitorError);
-    connect(cam_monitor, &cam_logger::framesChanged, this, &MainWindow::onFramesChanged);
-
-    connect(&switchTimer, &QTimer::timeout, this, &MainWindow::onSwitchTimer);
+    //m_camWindow = new QWidget;
     switchTimer.start(30000);
 
     int cam_id = std::max(appConfig::get_mon_camera(), 0);
@@ -320,51 +322,46 @@ void MainWindow::onFramesChanged(int frames)
 void MainWindow::onStartMon()
 {
     const cam_logger* clogger = loggers.at(appState.camId);
-    QString str = QString("Play from  %1").arg(clogger->get_name());
+    QString str = QString("%1 is monitored").arg(clogger->get_name());
     label->setText(str);
     FrameNo->setText("-");
+    appLog::write(LOG_LEVEL_CAM_MON, str );
 #if defined DESKTOP_DEBUG_BUILD
-    m_camWindow->show
-    ();
+    showMinimized();
 #else
-    m_camWindow->showFullScreen();
+    hide();
 #endif
-    m_camWindow->activateWindow();
-
+    //cam_monitor->getPlayer()->set_fullscreen(true);
 }
 
 void MainWindow::onStopMon()
 {
     const cam_logger* clogger = loggers.at(appState.camId);
     QString str = QString("%1 lost connection").arg(clogger->get_name());
-    appLog::write(6, str);
+    appLog::write(LOG_LEVEL_CAM_MON, str);
     label->setText(str);
     activateSelf();
-
 }
 
 void MainWindow::activateSelf()
 {
 
-#if defined DESKTOP_DEBUG_BUILD
-    show();
-#else
+    showNormal();
+#if !defined DESKTOP_DEBUG_BUILD
     showFullScreen();
 # endif
     activateWindow();
-    m_camWindow->hide();
+
 }
 
 void MainWindow::onMonitorError()
 {
     const cam_logger* clogger = loggers.at(appState.camId);
-    if (m_camWindow->isVisible())
-    {
-        QString str = QString("Camera %1 not respond").arg(clogger->get_name());
-        appLog::write(0, str);
-        onStopMon();
-    }
-    cam_monitor->startMonitoring(m_camWindow, clogger->get_mrl());
+    QString str = QString("Camera %1 not respond").arg(clogger->get_name());
+    if (isVisible())
+        appLog::write(LOG_LEVEL_CAM_MON, str);
+    onStopMon();
+    cam_monitor->startMonitoring( clogger->get_mrl());
 }
 
 void MainWindow::startLoggers()
@@ -438,15 +435,15 @@ void MainWindow::check_need_update()
     QFile upd_cmd_file(upd_cmd);
     if (upd_cmd_file.exists())
     {
-        appLog::write(0, "update command present") ;
+        appLog::write(LOG_LEVEL_ALWAYS, "update command present") ;
         upd_cmd_file.remove();
         if (do_rename_recorder())
         {
-            appLog::write(0, "vhub updated success ... go to reboot") ;
+            appLog::write(LOG_LEVEL_ALWAYS, "vhub updated success ... go to reboot") ;
             system("sudo reboot");
         }
         else
-            appLog::write(0, "vhub updated error. what can i do?") ;
+            appLog::write(LOG_LEVEL_ALWAYS, "vhub updated error. what can i do?") ;
     }
 }
 
@@ -488,6 +485,6 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
 
 void MainWindow::onSwitchTimer()
 {
-    emit cam_switch(appState.camId ? 0 : 1);
+    //emit cam_switch(appState.camId ? 0 : 1);
 }
 

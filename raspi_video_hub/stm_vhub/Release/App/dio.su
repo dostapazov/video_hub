@@ -1,0 +1,9 @@
+dio.c:21:9:dio_out_read	16	static
+dio.c:36:9:dio_out_bit_read	0	static
+dio.c:49:6:dio_out_write	16	static
+dio.c:68:6:dio_out_bit_write	4	static
+dio.c:78:9:dio_in_read	8	static
+dio.c:94:9:dio_in_filter	16	static
+dio.c:120:6:dio_set_filter	0	static
+dio.c:130:9:dio_key_press	8	static
+dio.c:155:6:dio_key_reset	0	static

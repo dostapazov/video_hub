@@ -1,0 +1,2 @@
+udp_locator.c:51:7:udp_locator_init	32	static
+udp_locator.c:81:6:udp_locator_recv	40	static
