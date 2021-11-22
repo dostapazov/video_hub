@@ -37,6 +37,7 @@ private slots:
     void IncompleteFrameMustStayInBuffer();
     void NotConsistentPrefixIncompleteFrameMustStayInBufferOnlyValidPart();
     void CamSwitchShouldEmitEvent();
+    void CamSwitchShouldSilenceWhenRepeatCamId();
     void CamSwitchShouldSilenceWhenWrongDataSize();
     void AppStateShouldEmitEvent();
     void AppStateShouldSilenceWhenWrongDataSize();
@@ -108,6 +109,21 @@ void test_parser::CamSwitchShouldEmitEvent()
     QList<QVariant> args = spy.takeFirst();
     QCOMPARE(args.takeAt(0).toUInt(), camId - 1 );
 }
+
+//TODO тест запрета повторного вызова смены камеры при одинаковом номере
+void test_parser::CamSwitchShouldSilenceWhenRepeatCamId()
+{
+    QSignalSpy spy(&cut, &RecvParser::camSwitch);
+    char camId = 7;
+    QByteArray packet = makePck(PCT_CAM_SWITCH, DEV_ID, QByteArray(&camId, 1));
+    cut.handleRecv(packet);
+    cut.handleRecv(packet);
+    QCOMPARE(cut.bufferSize(), 0);
+    QCOMPARE(spy.count(), 1);
+    QList<QVariant> args = spy.takeFirst();
+    QCOMPARE(args.takeAt(0).toUInt(), camId - 1 );
+}
+
 
 void test_parser::CamSwitchShouldSilenceWhenWrongDataSize()
 {
@@ -220,8 +236,8 @@ void test_parser::DateTimeShouldSilenceWhenWrongDataSize()
 void test_parser::ParserSholdFilterGarbageData()
 {
     QSignalSpy spy(&cut, &RecvParser::camSwitch);
-    QByteArray packet1 = makePck(PCT_CAM_SWITCH, DEV_ID, QByteArray("\x01"));
-    QByteArray packet2 = makePck(PCT_CAM_SWITCH, DEV_ID, QByteArray("\x02"));
+    QByteArray packet1 = makePck(PCT_CAM_SWITCH, DEV_ID, QByteArray("\x10"));
+    QByteArray packet2 = makePck(PCT_CAM_SWITCH, DEV_ID, QByteArray("\x20"));
     QByteArray garbage1(3, RP_SIGNATURE_);
     QByteArray garbage2("abcdef");
 
@@ -229,9 +245,9 @@ void test_parser::ParserSholdFilterGarbageData()
     QCOMPARE(cut.bufferSize(), 0);
     QCOMPARE(spy.count(), 2);
     QList<QVariant> args = spy.takeFirst();
-    QCOMPARE(args.takeAt(0).toUInt(), 1 - 1);
+    QCOMPARE(args.takeAt(0).toUInt(), 0x10 - 1);
     args = spy.takeFirst();
-    QCOMPARE(args.takeAt(0).toUInt(), 2 - 1);
+    QCOMPARE(args.takeAt(0).toUInt(), 0x20 - 1);
 
 }
 
