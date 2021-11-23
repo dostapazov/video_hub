@@ -106,6 +106,13 @@ QString     cam_logger::get_file_name(const QDateTime& dtm)
     return file_name;
 }
 
+bool cam_logger::setMonitorWidget( QWidget* widget)
+{
+    WId id = widget ? widget->winId() : 0;
+    if ( id != WId(m_logger_player->get_drawable()))
+        m_logger_player->set_drawable(id);
+}
+
 bool cam_logger::startMonitoring( const QString& mrl)
 {
     qInfo() << "startMonitoring " << m_logger_player;
@@ -124,6 +131,7 @@ bool cam_logger::startMonitoring( const QString& mrl)
         media->close();
         delete media;
     }
+
     startPlayWatchDog();
     return true;
 }
@@ -267,7 +275,7 @@ void cam_logger::OnPlayerPlaying(vlc::vlc_player* player)
     Q_UNUSED(player)
     QString str = QString("%1 playing").arg(get_name());
     appLog::write(LOG_LEVEL_VLC, str);
-    m_Playing = true;
+
     if (isStreaming())
     {
         m_logger_player->set_drawable(0);
@@ -277,8 +285,12 @@ void cam_logger::OnPlayerPlaying(vlc::vlc_player* player)
     }
     else
     {
+
 #ifndef DESKTOP_DEBUG_BUILD
-        m_logger_player->set_fullscreen(true);
+        if (!m_logger_player->get_drawable())
+        {
+            m_logger_player->set_fullscreen(true);
+        }
 #endif
     }
 
@@ -333,15 +345,17 @@ void      cam_logger::releasePlayer()
 
 void cam_logger::playChecker()
 {
+
     libvlc_media_stats_t stats =  m_logger_player->get_media_stats();
     if (m_demuxReadBytes != stats.i_demux_read_bytes)
     {
         if (!isStreaming())
         {
-            emit framesChanged(stats.i_displayed_pictures);
+            emit framesChanged(stats.i_displayed_pictures, stats.i_lost_pictures);
         }
         m_demuxReadBytes = stats.i_demux_read_bytes;
         playWatchdog.start();
+        m_Playing = true;
         return;
     }
 
@@ -360,7 +374,7 @@ void cam_logger::startPlayWatchDog()
         playWatchdog.stop();
     playWatchdog.setSingleShot(true);
     playWatchdog.setInterval(PLAY_WATCHDOG_TIMEOUT);
-    playWatchdog.start();
+    playChecker();
 }
 
 bool cam_logger::togglePlaying()

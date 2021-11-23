@@ -33,7 +33,7 @@ void FileDeleterThread::run()
     }
 
     int time_count     = 0;
-    int sleep_interval = 200;
+    int sleep_interval = 1000;
     while (!isInterruptionRequested())
     {
         if (time_count > time_interval)

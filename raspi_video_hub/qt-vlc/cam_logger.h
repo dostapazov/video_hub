@@ -50,11 +50,13 @@ public:
     bool togglePlaying();
     vlc::vlc_player* getPlayer() {return  m_logger_player;}
 
+    bool setMonitorWidget(QWidget* widget);
+
 signals :
     void onPlayStart();
     void onPlayStop();
     void onError();
-    void framesChanged(int frames);
+    void framesChanged(int displFrames, int lostFrames);
 
 private Q_SLOTS:
 
@@ -97,7 +99,7 @@ private:
 
     int           m_demuxReadBytes  = 0;
 
-    static constexpr int PLAY_WATCHDOG_TIMEOUT = 5000;
+    static constexpr int PLAY_WATCHDOG_TIMEOUT = 10000;
     vlc::vlc_player*  m_logger_player     = nullptr;
 };
 

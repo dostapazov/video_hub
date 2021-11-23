@@ -280,6 +280,7 @@ void MainWindow::onCamSwitch(quint8 camId)
         QString str = tr("Monitor switch to camera (%1) %2").arg(int(camId)).arg(clogger->get_mrl());
         appLog::write(LOG_LEVEL_CAM_MON, str);
         cam_monitor->startMonitoring(clogger->get_mrl());
+        cam_monitor->setMonitorWidget(m_CamWidget);
         str = QString("Wait data from %1").arg(clogger->get_name());
         label->setText(str);
         activateSelf();
@@ -299,6 +300,7 @@ void MainWindow::initCamMonitor()
         connect(cam_monitor, &cam_logger::onError, this, &MainWindow::onMonitorError);
         connect(cam_monitor, &cam_logger::framesChanged, this, &MainWindow::onFramesChanged);
         connect(&switchTimer, &QTimer::timeout, this, &MainWindow::onSwitchTimer);
+        m_CamWidget = new QWidget;
     }
 }
 
@@ -313,9 +315,11 @@ void MainWindow::startCamMonitor()
     emit cam_switch(static_cast<quint8>(cam_id));
 }
 
-void MainWindow::onFramesChanged(int frames)
+void MainWindow::onFramesChanged(int displayFrames, int lostFrames)
 {
-    this->FrameNo->setText(QString::number(frames));
+    FrameNo->setText(QString::number(displayFrames));
+    LostFrames->setText(QString::number(lostFrames));
+
 }
 
 
@@ -326,11 +330,23 @@ void MainWindow::onStartMon()
     label->setText(str);
     FrameNo->setText("-");
     appLog::write(LOG_LEVEL_CAM_MON, str );
+    if (m_CamWidget)
+    {
 #if defined DESKTOP_DEBUG_BUILD
-    showMinimized();
+        m_CamWidget->show();
 #else
-    hide();
+        m_CamWidget->showFullScreen();
 #endif
+        m_CamWidget->activateWindow();
+    }
+    else
+    {
+#if defined DESKTOP_DEBUG_BUILD
+        showMinimized();
+#else
+        hide();
+#endif
+    }
     //cam_monitor->getPlayer()->set_fullscreen(true);
 }
 
@@ -345,11 +361,13 @@ void MainWindow::onStopMon()
 
 void MainWindow::activateSelf()
 {
-
-    showNormal();
+    if (!m_CamWidget)
+    {
+        showNormal();
 #if !defined DESKTOP_DEBUG_BUILD
-    showFullScreen();
+        showFullScreen();
 # endif
+    }
     activateWindow();
 
 }

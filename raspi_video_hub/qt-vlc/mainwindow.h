@@ -46,7 +46,7 @@ private slots:
     void on_blink();
     void onCamSwitch(quint8 camId);
     void on_bTestUpdate_clicked();
-    void onFramesChanged(int frames);
+    void onFramesChanged(int displayFrames, int lostFrames);
     void onMonitorError();
     void setSystemDateTime(QDateTime dt);
     void startLoggers();
@@ -82,13 +82,13 @@ private:
 
     quint8 devId;
     QString m_vlog_root  ;
+    QWidget* m_CamWidget = nullptr;
 
 
     static constexpr int PLAYER_RESPONSE_TIMEOUT = 10000;
     QTimer playerResponseTimer;
 
     QList<cam_params_t> readCameraList();
-
     QVector<cam_logger*>   loggers;
     cam_logger* cam_monitor = nullptr;
     void onStartMon();
@@ -103,13 +103,9 @@ private:
 
     bool               led_state = true;
 
-    QByteArray         rxBuf;
     QSerialPort*       uart = Q_NULLPTR;
-
     FileDeleterThread* file_deleter = Q_NULLPTR;
 
-
-    int             cam_time_synchro = -1;
     static const char* const vlcArgs[];
     static bool    do_rename_recorder  ();
     static QString get_update_file_name();

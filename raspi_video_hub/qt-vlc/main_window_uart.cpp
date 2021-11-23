@@ -44,10 +44,10 @@ void MainWindow::initRecvParser(QIODevice* io)
 {
     recvParser.setDevId(devId);
     recvParser.setIoDevice(io);
-    connect(&recvParser, &RecvParser::camSwitch, this, &MainWindow::onCamSwitch, Qt::QueuedConnection);
-    connect(&recvParser, &RecvParser::appState, this, &MainWindow::reqAppState, Qt::QueuedConnection);
-    connect(&recvParser, &RecvParser::setDateTime, this, &MainWindow::setSystemDateTime, Qt::QueuedConnection);
-    connect(&recvParser, &RecvParser::errorPacket, this, &MainWindow::errorPacket, Qt::QueuedConnection);
+    connect(&recvParser, &RecvParser::camSwitch, this, &MainWindow::onCamSwitch);
+    connect(&recvParser, &RecvParser::appState, this, &MainWindow::reqAppState);
+    connect(&recvParser, &RecvParser::setDateTime, this, &MainWindow::setSystemDateTime);
+    connect(&recvParser, &RecvParser::errorPacket, this, &MainWindow::errorPacket);
 }
 
 
