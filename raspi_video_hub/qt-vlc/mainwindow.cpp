@@ -67,7 +67,6 @@ MainWindow::MainWindow(QWidget* parent) :
 
 MainWindow::~MainWindow()
 {
-    deinit_all();
 }
 
 void MainWindow::initStartLoggers()
@@ -117,6 +116,7 @@ void MainWindow::closeEvent(QCloseEvent* event)
 {
     Q_UNUSED(event);
     QMainWindow::closeEvent(event);
+    deinit_all();
     qApp->quit();
 }
 

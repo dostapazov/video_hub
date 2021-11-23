@@ -40,9 +40,10 @@ LIBS += -L/usr/X11/lib -lX11
  }
 }
 
-SOURCES += recorder_main.cpp\
+SOURCES +=\
 	cam_logger.cpp \
 	fan_control.cpp \
+	main.cpp \
 		mainwindow.cpp \
 	appconfig.cpp \
 	crc.cpp \
