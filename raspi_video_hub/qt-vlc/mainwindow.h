@@ -99,7 +99,7 @@ private:
     QTimer starLoggersTimer ;
     QTimer switchTimer;
     RecvParser recvParser;
-    PCK_STATE_t        appState = {0xFF, 77, 777};
+    PCK_STATE_t        appState ;
 
     bool               led_state = true;
 

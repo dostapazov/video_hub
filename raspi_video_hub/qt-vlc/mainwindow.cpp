@@ -46,6 +46,9 @@ MainWindow::MainWindow(QWidget* parent) :
     setupUi(this);
     devId = appConfig::get_devid();
     connect(this, &MainWindow::cam_switch, this, &MainWindow::onCamSwitch, Qt::ConnectionType::QueuedConnection);
+    appState.camId = -1;
+    appState.fanState  = 0;
+    appState.temper = 0;
 
     initStartLoggers();
     init_gpio  ();
@@ -272,20 +275,32 @@ void MainWindow::on_blink()
 
 void MainWindow::onCamSwitch(quint8 camId)
 {
-    if (appState.camId != camId)
+    if (appState.camId != camId )
     {
-        appState.camId = camId;
-        appConfig::set_mon_camera(camId);
-        const cam_logger* clogger = loggers.at(camId);
-        QString str = tr("Monitor switch to camera (%1) %2").arg(int(camId)).arg(clogger->get_mrl());
-        appLog::write(LOG_LEVEL_CAM_MON, str);
-        cam_monitor->startMonitoring(clogger->get_mrl());
-        cam_monitor->setMonitorWidget(m_CamWidget);
-        str = QString("Wait data from %1").arg(clogger->get_name());
-        label->setText(str);
-        activateSelf();
+        if ( camId < loggers.count())
+        {
+
+            appState.camId = camId;
+            appConfig::set_mon_camera(camId);
+            const cam_logger* clogger = loggers.at(camId);
+            QString str = tr("Monitor switch to camera (%1) %2").arg(int(camId)).arg(clogger->get_mrl());
+            appLog::write(LOG_LEVEL_CAM_MON, str);
+            cam_monitor->startMonitoring(clogger->get_mrl());
+            cam_monitor->setMonitorWidget(m_CamWidget);
+            str = QString("Wait data from %1").arg(clogger->get_name());
+            label->setText(str);
+            activateSelf();
+        }
+        else
+        {
+            appLog::write(LOG_LEVEL_DEBUG,
+                          QString("selected camera Id[%1] is grow than camera count [%2]")
+                          .arg(quint32(camId))
+                          .arg(loggers.count())
+                         );
+        }
+
     }
-    return;
 }
 
 

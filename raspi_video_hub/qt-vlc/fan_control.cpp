@@ -18,6 +18,8 @@ void MainWindow::readCPUtemper()
     onTemper  = 1000 * qMax(onTemper, 45);
     offTemper = 1000 * qMax(offTemper, 40);
 
+
+
     thermal = fopen(temper_file_name, "r");
 
     if (thermal)
@@ -27,17 +29,19 @@ void MainWindow::readCPUtemper()
         fclose(thermal);
         appState.temper = static_cast<quint16>(rv);
 
+
     }
 
     if ( !thermal || !n )
     {
         appState.temper = static_cast<quint16>(onTemper + 1);
-        if (!appState.fanState) // Вентилятор выключен пишем в лог и включаем принудительно
+        if (1 != appState.fanState) // Вентилятор выключен пишем в лог и включаем принудительно
             appLog::write(LOG_LEVEL_FAN_CTRL, "error get temperature from mon file. switch fan ON");
     }
 
     //qDebug("current temp %u  fan state %d onTemp %d offTemp %d ",(unsigned int)appState.temper, (int)appState.fanState,onTemper,offTemper);
     bool fan_state_changed = false;
+
     if ((appState.temper >= onTemper) && (appState.fanState != 1))
     {
         appState.fanState = 1;
@@ -53,6 +57,11 @@ void MainWindow::readCPUtemper()
         QString str = tr("Temper  %1 < %2, stopping fan").arg(appState.temper).arg(onTemper);
         appLog::write(LOG_LEVEL_FAN_CTRL, str);
     }
+    QString str = QString("Current temper  %1, fan_state %2 changed %3")
+                  .arg(appState.temper)
+                  .arg(appState.fanState)
+                  .arg(fan_state_changed);
+    appLog::write(LOG_LEVEL_FAN_CTRL, str);
 
     if (fan_state_changed)
     {

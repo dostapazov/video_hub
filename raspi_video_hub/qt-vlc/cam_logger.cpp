@@ -369,7 +369,7 @@ void cam_logger::playChecker()
 
 void cam_logger::startPlayWatchDog()
 {
-    m_demuxReadBytes = 0;
+    m_demuxReadBytes = -1;
     if (playWatchdog.isActive())
         playWatchdog.stop();
     playWatchdog.setSingleShot(true);
