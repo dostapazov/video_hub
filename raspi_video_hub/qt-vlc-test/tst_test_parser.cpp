@@ -37,14 +37,14 @@ private slots:
     void IncompleteFrameMustStayInBuffer();
     void NotConsistentPrefixIncompleteFrameMustStayInBufferOnlyValidPart();
     void CamSwitchShouldEmitEvent();
-    void CamSwitchShouldSilenceWhenRepeatCamId();
-    void CamSwitchShouldSilenceWhenWrongDataSize();
+    void CamSwitchShouldNotEmitEventWhenRepeatCamId();
+    void CamSwitchShouldNotEmitEventWhenWrongDataSize();
     void AppStateShouldEmitEvent();
-    void AppStateShouldSilenceWhenWrongDataSize();
+    void AppStateShouldNotEmitEventWhenWrongDataSize();
     void DateTimeShouldEmitEvent();
-    void DateTimeShouldSilenceWhenWrongDataSize();
-    void ParserShouldSilenceWhenWrongDevId();
-    void ParserSholdFilterGarbageData();
+    void DateTimeShouldNotEmitEventWhenWrongDataSize();
+    void ParserShouldNotEmitAnyEventWhenWrongDevId();
+    void ParserShouldFilterGarbageData();
     void ReceivePer1byteShouldCorrectHandled();
 };
 
@@ -111,7 +111,7 @@ void test_parser::CamSwitchShouldEmitEvent()
 }
 
 //TODO тест запрета повторного вызова смены камеры при одинаковом номере
-void test_parser::CamSwitchShouldSilenceWhenRepeatCamId()
+void test_parser::CamSwitchShouldNotEmitEventWhenRepeatCamId()
 {
     QSignalSpy spy(&cut, &RecvParser::camSwitch);
     char camId = 7;
@@ -125,7 +125,7 @@ void test_parser::CamSwitchShouldSilenceWhenRepeatCamId()
 }
 
 
-void test_parser::CamSwitchShouldSilenceWhenWrongDataSize()
+void test_parser::CamSwitchShouldNotEmitEventWhenWrongDataSize()
 {
     QSignalSpy spy(&cut, &RecvParser::camSwitch);
     QByteArray packet = makePck(PCT_CAM_SWITCH, DEV_ID, QByteArray("\x01\x2"));
@@ -134,13 +134,13 @@ void test_parser::CamSwitchShouldSilenceWhenWrongDataSize()
     QCOMPARE(spy.count(), 0);
 }
 
-void test_parser::ParserShouldSilenceWhenWrongDevId()
+void test_parser::ParserShouldNotEmitAnyEventWhenWrongDevId()
 {
-    QSignalSpy spy(&cut, &RecvParser::camSwitch);
+    QSignalSpy spy_cam(&cut, &RecvParser::camSwitch);
     QByteArray packet = makePck(PCT_CAM_SWITCH, DEV_ID + 1, QByteArray("\x01"));
     cut.handleRecv(packet);
     QCOMPARE(cut.bufferSize(), 0);
-    QCOMPARE(spy.count(), 0);
+    QCOMPARE(spy_cam.count(), 0);
 }
 
 void test_parser::AppStateShouldEmitEvent()
@@ -153,7 +153,7 @@ void test_parser::AppStateShouldEmitEvent()
 
 }
 
-void test_parser::AppStateShouldSilenceWhenWrongDataSize()
+void test_parser::AppStateShouldNotEmitEventWhenWrongDataSize()
 {
     QSignalSpy spy(&cut, &RecvParser::appState);
     QByteArray packet = makePck(PCT_STATE, DEV_ID, QByteArray("\x01"));
@@ -223,7 +223,7 @@ void test_parser::ReceivePer1byteShouldCorrectHandled()
 }
 
 
-void test_parser::DateTimeShouldSilenceWhenWrongDataSize()
+void test_parser::DateTimeShouldNotEmitEventWhenWrongDataSize()
 {
     QSignalSpy spy(&cut, &RecvParser::setDateTime);
     QByteArray data(sizeof (PCK_DateTime_t) +1, Qt::Uninitialized);
@@ -233,7 +233,7 @@ void test_parser::DateTimeShouldSilenceWhenWrongDataSize()
     QCOMPARE(spy.count(), 0);
 }
 
-void test_parser::ParserSholdFilterGarbageData()
+void test_parser::ParserShouldFilterGarbageData()
 {
     QSignalSpy spy(&cut, &RecvParser::camSwitch);
     QByteArray packet1 = makePck(PCT_CAM_SWITCH, DEV_ID, QByteArray("\x10"));
