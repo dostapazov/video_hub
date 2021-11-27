@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include "appconfig.h"
 #include "mainwindow.h"
-#include <QOpenGLWidget>
 
 #include "applog.h"
 #include <qpalette.h>
@@ -44,11 +43,14 @@ MainWindow::MainWindow(QWidget* parent) :
 
 {
     setupUi(this);
+    LabelVersion->setText(version());
     devId = appConfig::get_devid();
     connect(this, &MainWindow::cam_switch, this, &MainWindow::onCamSwitch, Qt::ConnectionType::QueuedConnection);
     appState.camId = -1;
     appState.fanState  = FAN_OFF;
     appState.temper = 0;
+
+
 
     initStartLoggers();
     init_gpio  ();
@@ -283,7 +285,10 @@ void MainWindow::onCamSwitch(quint8 camId)
             appState.camId = camId;
             appConfig::set_mon_camera(camId);
             const cam_logger* clogger = loggers.at(camId);
-            QString str = tr("Switch to %1 [%2]").arg(int(camId)).arg(clogger->get_mrl());
+            QString str = tr("Switch to %1 [%2]")
+                          .arg(clogger->get_name())
+                          .arg(clogger->get_mrl());
+
             appLog::write(LOG_LEVEL_CAM_MON, str);
             cam_monitor->startMonitoring(clogger->get_mrl());
             cam_monitor->setMonitorWidget(m_CamWidget);
@@ -315,21 +320,17 @@ void MainWindow::initCamMonitor()
     {
         cam_monitor = new cam_logger({-1, "Monitor logger", ""});
         connect(cam_monitor, &cam_logger::onPlayStart, this, &MainWindow::onStartMon);
-        connect(cam_monitor, &cam_logger::onPlayStop, this, &MainWindow::onStopMon);
+        connect(cam_monitor, &cam_logger::onPlayStop, this, &MainWindow::onMonitorError);
         connect(cam_monitor, &cam_logger::onError, this, &MainWindow::onMonitorError);
         connect(cam_monitor, &cam_logger::framesChanged, this, &MainWindow::onFramesChanged);
-        connect(&switchTimer, &QTimer::timeout, this, &MainWindow::onSwitchTimer);
         m_CamWidget = new QWidget;
+
     }
 }
 
 void MainWindow::startCamMonitor()
 {
     appLog::write(LOG_LEVEL_CAM_MON, "start_cam_monitor ");
-    //m_camWindow = new QOpenGLWidget;
-    //m_camWindow = new QWidget;
-    switchTimer.start(30000);
-
     int cam_id = std::max(appConfig::get_mon_camera(), 0);
     emit cam_switch(static_cast<quint8>(cam_id));
 }
@@ -342,65 +343,60 @@ void MainWindow::onFramesChanged(int displayFrames, int lostFrames)
     LostFrames->setText(QString::number(m_FramesLost));
 }
 
-void MainWindow::onStartMon()
+
+bool  MainWindow::isCamMonitorActive()
 {
-    const cam_logger* clogger = loggers.at(appState.camId);
-    QString str = QString("%1 is monitored").arg(clogger->get_name());
-    label->setText(str);
-    FrameNo->setText("-");
-    appLog::write(LOG_LEVEL_CAM_MON, str );
-    if (m_CamWidget)
-    {
-#if defined DESKTOP_DEBUG_BUILD
-        m_CamWidget->show();
-#else
-        m_CamWidget->showFullScreen();
-#endif
-        m_CamWidget->activateWindow();
-    }
-    else
-    {
-#if defined DESKTOP_DEBUG_BUILD
-        showMinimized();
-#else
-        hide();
-#endif
-    }
-    //cam_monitor->getPlayer()->set_fullscreen(true);
+    return  m_CamWidget->isVisible() && m_CamWidget->isActiveWindow();
 }
 
-void MainWindow::onStopMon()
+void MainWindow::activateCamMonitor()
 {
-    const cam_logger* clogger = loggers.at(appState.camId);
-    QString str = QString("%1 lost connection at %2")
-                  .arg(clogger->get_name())
-                  .arg(QDateTime::currentDateTime().toString("dd-MM-yy hh:mm:ss"))
-                  ;
-    appLog::write(LOG_LEVEL_CAM_MON, str);
-    label->setText(str);
-    activateSelf();
+    if (m_CamWidget)
+    {
+        m_CamWidget->showFullScreen();
+        m_CamWidget->activateWindow();
+        m_CamWidget->setCursor(QCursor(Qt::BlankCursor));
+    }
 }
 
 void MainWindow::activateSelf()
 {
-    if (!m_CamWidget)
-    {
-        showNormal();
-#if !defined DESKTOP_DEBUG_BUILD
-        showFullScreen();
-# endif
-    }
+    showFullScreen();
     activateWindow();
+}
+
+
+void MainWindow::onStartMon()
+{
+    if (!isCamMonitorActive())
+    {
+        const cam_logger* clogger = loggers.at(appState.camId);
+        QString str = QString("%1 is monitored from %2")
+                      .arg(clogger->get_name())
+                      .arg(QDateTime::currentDateTime().toString("dd-MM-yy hh:mm:ss"))
+                      ;
+        label->setText(str);
+        FrameNo->setText("-");
+        appLog::write(LOG_LEVEL_CAM_MON, str );
+        activateCamMonitor();
+    }
 
 }
 
 void MainWindow::onMonitorError()
 {
     const cam_logger* clogger = loggers.at(appState.camId);
-    QString str = QString("Camera %1 not respond").arg(clogger->get_name());
-    if (isVisible())
+    if (isCamMonitorActive())
+    {
+        QString str = QString("%1 lost connection at %2")
+                      .arg(clogger->get_name())
+                      .arg(QDateTime::currentDateTime().toString("dd-MM-yy hh:mm:ss"))
+                      ;
         appLog::write(LOG_LEVEL_CAM_MON, str);
-    onStopMon();
+        label->setText(str);
+        activateSelf();
+    }
+
     cam_monitor->startMonitoring( clogger->get_mrl());
 }
 
@@ -454,14 +450,14 @@ QString MainWindow::get_update_file_name()
 bool MainWindow::do_rename_recorder()
 {
     bool ret = false;
-    QString app = QCoreApplication::applicationFilePath();
-    QString   app_upd = get_update_file_name();
+    QByteArray app = QCoreApplication::applicationFilePath().toLocal8Bit();
+    QByteArray   app_upd = get_update_file_name().toLocal8Bit();
 
     if (QFile(app_upd).exists())
     {
         ret =
-            (0 == unlink(app.toLocal8Bit().constData()) &&
-             0 == rename(app_upd.toLocal8Bit().constData(), app.toLocal8Bit().constData())
+            (0 == unlink(app.constData()) &&
+             0 == rename(app_upd.constData(), app.constData())
             );
     }
     return ret;
@@ -522,8 +518,12 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
 }
 #endif
 
-void MainWindow::onSwitchTimer()
+
+QString MainWindow::version()
 {
-    //emit cam_switch(appState.camId ? 0 : 1);
+    QString versionString =
+        versionString.asprintf("%d.%02d", VHUB_VERSION_MAJOR, VHUB_VERSION_MINOR);
+    return  versionString;
 }
+
 

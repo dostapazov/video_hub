@@ -99,7 +99,6 @@ private:
 
     int           m_demuxReadBytes  = 0;
 
-    static constexpr int PLAY_WATCHDOG_TIMEOUT = 10000;
     vlc::vlc_player*  m_logger_player     = nullptr;
 };
 

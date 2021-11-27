@@ -24,9 +24,10 @@
 #define FAN_ON      1
 #define FAN_OFF     0
 
-#define SWITCH_JABBER 30    //switch pin jabber timeout
-
 #define UPDATE_EXIT_CODE 77
+
+constexpr int VHUB_VERSION_MAJOR = 2;
+constexpr int VHUB_VERSION_MINOR = 1;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow
 {
@@ -53,7 +54,6 @@ private slots:
 
     void reqAppState();
     void errorPacket(QByteArray packet, bool crc);
-    void onSwitchTimer();
 
 private:
     void closeEvent(QCloseEvent* event) override;
@@ -94,14 +94,13 @@ private:
     cam_logger* cam_monitor = nullptr;
     quint64 m_FramesDisplayed, m_FramesLost;
     void onStartMon();
-    void onStopMon();
 
     QTimer blinker ;
     QTimer parser  ;
     QTimer starLoggersTimer ;
-    QTimer switchTimer;
-    RecvParser recvParser;
-    PCK_STATE_t        appState ;
+
+    RecvParser  recvParser;
+    PCK_STATE_t appState ;
 
     bool               led_state = true;
 
@@ -115,11 +114,16 @@ private:
 
     void deinitMonitor();
     void deinitFileDeleter();
-    void activateSelf();
     void initStartLoggers();
     void initRecvParser(QIODevice* io);
-
     void initCamMonitor();
+
+    bool isCamMonitorActive();
+    void activateCamMonitor();
+    void activateSelf();
+
+
+    static QString version();
 
 };
 
