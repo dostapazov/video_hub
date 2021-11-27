@@ -27,7 +27,7 @@
 #define UPDATE_EXIT_CODE 77
 
 constexpr int VHUB_VERSION_MAJOR = 2;
-constexpr int VHUB_VERSION_MINOR = 0;
+constexpr int VHUB_VERSION_MINOR = 1;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow
 {
