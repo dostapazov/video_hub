@@ -8,14 +8,12 @@
 #include <QMap>
 #include <QWindow>
 
-
 #include "ui_mainwindow.h"
 #include "filedeleterthread.h"
 #include "cam_logger.h"
 #include "recvparser.hpp"
 #include "proto.h"
 #include <functional>
-
 
 #define PIN_LED1    3
 #define PIN_SWITCH  0
@@ -42,8 +40,6 @@ Q_SIGNALS:
 
 private slots:
 
-//    void onUARTread();
-//    void parseReceive();
     void on_blink();
     void onCamSwitch(quint8 camId);
     void on_bTestUpdate_clicked();
@@ -57,14 +53,31 @@ private slots:
 
 private:
     void closeEvent(QCloseEvent* event) override;
-    void showEvent  (QShowEvent*   event) override;
 #ifdef DESKTOP_DEBUG_BUILD
     void keyReleaseEvent(QKeyEvent* event) override;
 #endif
+    quint8 devId;
+    QString m_vlog_root  ;
+    QWidget* m_CamWidget = nullptr;
 
+    QList<cam_params_t> readCameraList();
+    QVector<cam_logger*>   loggers;
+    cam_logger* cam_monitor = nullptr;
+    quint64 m_FramesDisplayed, m_FramesLost;
+    void onStartMon();
+
+    QTimer blinker ;
+    QTimer starLoggersTimer ;
+
+    RecvParser  recvParser;
+    PCK_STATE_t appState ;
+
+    bool led_state = true;
+
+    QSerialPort*       uart = Q_NULLPTR;
+    FileDeleterThread* file_deleter = Q_NULLPTR;
 
     void initBlinker();
-
     void startCamMonitor();
     void init_gpio  ();
     void init_libvlc();
@@ -81,32 +94,6 @@ private:
     QString whoami();
     bool check_media_drive();
 
-    quint8 devId;
-    QString m_vlog_root  ;
-    QWidget* m_CamWidget = nullptr;
-
-
-    static constexpr int PLAYER_RESPONSE_TIMEOUT = 10000;
-    QTimer playerResponseTimer;
-
-    QList<cam_params_t> readCameraList();
-    QVector<cam_logger*>   loggers;
-    cam_logger* cam_monitor = nullptr;
-    quint64 m_FramesDisplayed, m_FramesLost;
-    void onStartMon();
-
-    QTimer blinker ;
-    QTimer parser  ;
-    QTimer starLoggersTimer ;
-
-    RecvParser  recvParser;
-    PCK_STATE_t appState ;
-
-    bool               led_state = true;
-
-    QSerialPort*       uart = Q_NULLPTR;
-    FileDeleterThread* file_deleter = Q_NULLPTR;
-
     static const char* const vlcArgs[];
     static bool    do_rename_recorder  ();
     static QString get_update_file_name();
@@ -122,9 +109,7 @@ private:
     void activateCamMonitor();
     void activateSelf();
 
-
     static QString version();
-
 };
 
 #if defined DESKTOP_DEBUG_BUILD || defined (NOT_RASPBERRY)

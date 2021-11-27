@@ -221,9 +221,7 @@ vlc::vlc_media*  cam_logger::create_media()
         {
             str = QString("%1 error open  ").arg(get_name()).arg(get_mrl());
             appLog::write(LOG_LEVEL_VLC, str);
-
         }
-
     }
     return media;
 }
@@ -291,17 +289,6 @@ void cam_logger::OnPlayerPlaying(vlc::vlc_player* player)
         cutTimer.setInterval(m_file_timelen);
         cutTimer.start();
     }
-    else
-    {
-
-#ifndef DESKTOP_DEBUG_BUILD
-        if (!m_logger_player->get_drawable())
-        {
-            m_logger_player->set_fullscreen(true);
-        }
-#endif
-    }
-
     startPlayWatchDog();
     emit onPlayStart();
 

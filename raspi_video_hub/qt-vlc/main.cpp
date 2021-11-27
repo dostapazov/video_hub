@@ -13,8 +13,6 @@ int main_recorder(int argc, char* argv[])
     QString logFileName;
     int logLevel = 0;
 
-
-
     logFileName = appConfig::get_log_name();
     logLevel = appConfig::get_log_level();
 
@@ -24,7 +22,6 @@ int main_recorder(int argc, char* argv[])
     appLog::deinit();
     return res;
 }
-
 
 int main(int argc, char* argv[])
 {

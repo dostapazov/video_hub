@@ -51,8 +51,8 @@ SOURCES +=\
 	applog.cpp \
 	filedeleterthread.cpp \
 	recvparser.cpp \
-	vlclasses.cpp \
-	main_window_uart.cpp
+	uart_comm.cpp \
+	vlclasses.cpp
 
 HEADERS  += mainwindow.h \
 	appconfig.h \

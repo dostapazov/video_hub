@@ -4,7 +4,6 @@
 #include <QtCore>
 #include <QSerialPortInfo>
 
-
 void MainWindow::init_uart()
 {
     QString  uartDevName = appConfig::get_uart_device();
@@ -50,7 +49,6 @@ void MainWindow::initRecvParser(QIODevice* io)
     connect(&recvParser, &RecvParser::errorPacket, this, &MainWindow::errorPacket);
 }
 
-
 void MainWindow::deinitUART()
 {
     recvParser.setIoDevice(nullptr);
@@ -78,10 +76,8 @@ void MainWindow::setSystemDateTime(QDateTime dt)
     //appLog::write(LOG_LEVEL_PARSER, QString("command %1").arg(dateTimeString));
 }
 
-
 void MainWindow::reqAppState()
 {
     appLog::write(LOG_LEVEL_PARSER, "Respond AppState");
     uart->write(makePck(PCT_STATE, devId, QByteArray((char*)&appState, sizeof(appState))));
 }
-

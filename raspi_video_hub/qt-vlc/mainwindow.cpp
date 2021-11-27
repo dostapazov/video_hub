@@ -90,12 +90,6 @@ void MainWindow::init_libvlc()
 }
 
 
-
-void MainWindow::showEvent(QShowEvent* event)
-{
-    QMainWindow::showEvent(event);
-}
-
 void MainWindow::start_file_deleter()
 {
     if (file_deleter && !file_deleter->isRunning())
