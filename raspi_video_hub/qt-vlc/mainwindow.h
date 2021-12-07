@@ -110,6 +110,7 @@ private:
     void activateSelf();
 
     static QString version();
+    bool getCurrentTemper();
 };
 
 #if defined DESKTOP_DEBUG_BUILD || defined (NOT_RASPBERRY)
