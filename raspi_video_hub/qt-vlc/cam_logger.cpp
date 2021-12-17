@@ -345,7 +345,7 @@ void cam_logger::playChecker()
         }
         m_demuxReadBytes = stats.i_demux_read_bytes;
         playWatchdog.start();
-        m_Playing = true;
+        m_Playing = stats.i_demux_read_bytes;
         return;
     }
 
@@ -358,7 +358,6 @@ void cam_logger::playChecker()
     emit onError();
 }
 
-constexpr int PLAY_WATCHDOG_TIMEOUT = 5000;
 
 void cam_logger::startPlayWatchDog()
 {

@@ -48,7 +48,7 @@ private slots:
     void setSystemDateTime(QDateTime dt);
     void startLoggers();
 
-    void reqAppState();
+    void sendCamState();
     void errorPacket(QByteArray packet, bool crc);
 
 private:
@@ -68,6 +68,7 @@ private:
 
     QTimer blinker ;
     QTimer starLoggersTimer ;
+    QTimer stateTimer;
 
     RecvParser  recvParser;
     PCK_STATE_t appState ;
@@ -93,6 +94,7 @@ private:
     bool fanSwitch(bool on);
     QString whoami();
     bool check_media_drive();
+
 
     static const char* const vlcArgs[];
     static bool    do_rename_recorder  ();

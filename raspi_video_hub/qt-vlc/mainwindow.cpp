@@ -404,6 +404,11 @@ void MainWindow::startLoggers()
         {
             cl->startStreaming(m_vlog_root);
         }
+
+        connect (&stateTimer, &QTimer::timeout, this, &MainWindow::sendCamState);
+        stateTimer.setInterval(cam_logger::PLAY_WATCHDOG_TIMEOUT);
+        stateTimer.start();
+
     }
     else
         starLoggersTimer.start();
