@@ -44,11 +44,12 @@ public:
     const QString  get_mrl   () const   {return m_params.mrl;}
     void set_mrl(const QString& mrl);
     bool startMonitoring(const QString& mrl);
-    bool startStreaming(const QString folder, int timeDuration);
+    bool startStreaming(const QString folder);
     void stop();
     bool isStreaming() { return m_StreamingMode;}
     bool togglePlaying();
     vlc::vlc_player* getPlayer() {return  m_logger_player;}
+    uint8_t getErrorBit();
 
     bool setMonitorWidget(QWidget* widget);
 
@@ -95,7 +96,6 @@ private:
     QStringList   m_streamFiles;
     int           m_file_timelen    = 0;
     int           m_network_caching = 300;
-    int           m_time_duration = 0;
 
     int           m_demuxReadBytes  = 0;
 

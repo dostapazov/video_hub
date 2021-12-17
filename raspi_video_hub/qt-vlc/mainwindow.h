@@ -113,7 +113,7 @@ private:
     bool getCurrentTemper();
 };
 
-#if defined DESKTOP_DEBUG_BUILD || defined (NOT_RASPBERRY)
+#if defined (DESKTOP_DEBUG_BUILD) || defined (NOT_RASPBERRY)
     #define digitalRead(x)
     #define digitalWrite(x,y)
 #else

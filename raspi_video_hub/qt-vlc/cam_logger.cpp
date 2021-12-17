@@ -63,9 +63,9 @@ void limitDuration(const QDateTime& dtm, long& duration)
 
 int    cam_logger::get_time_interval(const QDateTime& dtm)
 {
-    m_time_duration = appConfig::get_time_duration();
+    int time_duration = appConfig::get_time_duration();
     QTime time = dtm.time();
-    long duration_ms = m_time_duration * MIN_MSECS;
+    long duration_ms = time_duration * MIN_MSECS;
     long current_ms  = time.hour() * HOUR_MSECS + time.minute() * MIN_MSECS + time.second() * SEC_MSECS;
     ldiv_t ldt = ldiv(current_ms, duration_ms);
     duration_ms -= ldt.rem;
@@ -144,14 +144,10 @@ bool cam_logger::startMonitoring( const QString& mrl)
     return true;
 }
 
-bool cam_logger::startStreaming(const QString folder, int timeDuration)
+bool cam_logger::startStreaming(const QString folder)
 {
     m_StreamingMode = true;
-    if (folder.isEmpty() || !timeDuration)
-        return false;
-
     m_StorageFolder = folder;
-    m_time_duration = timeDuration ;
     connect(this, &cam_logger::onError, this, &cam_logger::nextFile);
     nextFile();
     return true;
@@ -246,11 +242,10 @@ void cam_logger::nextFile()
         cutTimer.stop ();
 
     createPlayer();
-
     vlc::vlc_media* media = create_media();
     media = m_logger_player->set_media(media);
+    m_Playing = false;
     m_logger_player->play();
-
 
     if (media)
         media->deleteLater();
@@ -357,6 +352,7 @@ void cam_logger::playChecker()
     if (m_Playing)
     {
         appLog::write(LOG_LEVEL_VLC, QString("%1 not respond").arg(get_name()));
+
     }
 
     emit onError();
@@ -381,4 +377,12 @@ bool cam_logger::togglePlaying()
         return m_logger_player->is_playing() ? m_logger_player->stop() : m_logger_player->play();
     }
     return false;
+}
+
+uint8_t cam_logger::getErrorBit()
+{
+    if(m_Playing || 0 == m_params.id)
+        return 0;
+
+    return 1<<(m_params.id-1);
 }

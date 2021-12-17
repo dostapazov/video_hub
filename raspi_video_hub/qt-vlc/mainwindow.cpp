@@ -17,9 +17,7 @@ const char* const MainWindow::vlcArgs[] =
     "--noaudio",
     "--no-overlay",
     "--network-caching=300",
-#ifdef DESKTOP_DEBUG_BUILD
-    "--verbose=-1",
-#else
+#if !defined DESKTOP_DEBUG_BUILD
     "--verbose=-1",
 #endif
 
@@ -85,6 +83,7 @@ void MainWindow::init_libvlc()
 {
     int argc = sizeof(vlcArgs) / sizeof(vlcArgs[0]);
     vlc::vlc_instance::get_instance(argc, vlcArgs);
+
     QString vlc_ver = vlc::vlc_instance::get_version();
     appLog::write(LOG_LEVEL_ALWAYS, QString("VLC-lib version ") + vlc_ver);
 }
@@ -400,11 +399,10 @@ void MainWindow::startLoggers()
     if (m_vlog_root.isEmpty() && check_media_drive())
     {
         start_file_deleter();
-        int timeDuration = appConfig::get_time_duration();
 
         foreach (cam_logger* cl, loggers)
         {
-            cl->startStreaming(m_vlog_root, timeDuration);
+            cl->startStreaming(m_vlog_root);
         }
     }
     else

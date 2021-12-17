@@ -36,7 +36,10 @@ public :
 	static      const char*     get_version();
 
 
-	const libvlc_instance_t* operator()()const { return m_instance;}
+    const libvlc_instance_t* operator()()const
+    {
+        return m_instance;
+    }
 
 private:
 	libvlc_instance_t*     m_instance;

@@ -5,7 +5,7 @@
 bool MainWindow::getCurrentTemper()
 {
     FILE* thermal;
-    int n = 0;
+
 #ifdef Q_OS_LINUX
     const char* temper_file_name = "/sys/class/thermal/thermal_zone0/temp";
 #else
@@ -18,8 +18,11 @@ bool MainWindow::getCurrentTemper()
         return false;
 
     int rv = 0;
-    n = fscanf(thermal, "%d", &rv);
+    int n = fscanf(thermal, "%d", &rv);
     fclose(thermal);
+    if(!n)
+        return false;
+
     appState.temper = static_cast<quint16>(rv);
     return true;
 }
