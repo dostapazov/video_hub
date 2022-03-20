@@ -59,6 +59,7 @@ private:
     quint8 devId;
     QString m_vlog_root  ;
     QWidget* m_CamWidget = nullptr;
+    bool camMonActive = false;
 
     QList<cam_params_t> readCameraList();
     QVector<cam_logger*>   loggers;

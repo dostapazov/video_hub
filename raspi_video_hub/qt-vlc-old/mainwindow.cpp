@@ -54,7 +54,6 @@ MainWindow::MainWindow(QWidget *parent) :
       init_uart        ();
       init_config      ();
       init_libvlc      ();
-
 }
 
 MainWindow::~MainWindow()

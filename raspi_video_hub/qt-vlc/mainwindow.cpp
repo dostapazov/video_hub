@@ -1,4 +1,3 @@
-//
 #include <QDebug>
 #include <QDir>
 //#include <QAction>
@@ -47,8 +46,6 @@ MainWindow::MainWindow(QWidget* parent) :
     appState.camId = -1;
     appState.fanState  = FAN_OFF;
     appState.temper = 0;
-
-
 
     initStartLoggers();
     init_gpio  ();
@@ -156,9 +153,9 @@ void MainWindow::load_config()
     QList<cam_params_t> cams = readCameraList();
     for ( cam_params_t& cp : cams)
     {
-        loggers.append(new cam_logger(cp));
-        QString str = tr("append camera ID=%1 %2 %3").arg(cp.id).arg(cp.name).arg(cp.mrl);
-        appLog::write(LOG_LEVEL_DEBUG, str);
+            loggers.append(new cam_logger(cp));
+            QString str = tr("append camera ID=%1 %2 %3").arg(cp.id).arg(cp.name).arg(cp.mrl);
+            appLog::write(LOG_LEVEL_DEBUG, str);
     }
 
 #ifdef DESKTOP_DEBUG_BUILD
@@ -316,8 +313,9 @@ void MainWindow::initCamMonitor()
         connect(cam_monitor, &cam_logger::onPlayStop, this, &MainWindow::onMonitorError);
         connect(cam_monitor, &cam_logger::onError, this, &MainWindow::onMonitorError);
         connect(cam_monitor, &cam_logger::framesChanged, this, &MainWindow::onFramesChanged);
+#ifndef USE_NATIVE_PLAYER_WINDOW
         m_CamWidget = new QWidget;
-
+#endif
     }
 }
 
@@ -334,28 +332,41 @@ void MainWindow::onFramesChanged(int displayFrames, int lostFrames)
     m_FramesLost += lostFrames;
     FrameNo->setText(QString::number(m_FramesDisplayed));
     LostFrames->setText(QString::number(m_FramesLost));
+    if(displayFrames)
+        activateCamMonitor();
 }
 
 
 bool  MainWindow::isCamMonitorActive()
 {
-    return  m_CamWidget->isVisible() && m_CamWidget->isActiveWindow();
+    return camMonActive;//  m_CamWidget->isVisible() && m_CamWidget->isActiveWindow();
 }
 
 void MainWindow::activateCamMonitor()
 {
+    camMonActive = true;
     if (m_CamWidget)
     {
         m_CamWidget->showFullScreen();
         m_CamWidget->activateWindow();
         m_CamWidget->setCursor(QCursor(Qt::BlankCursor));
     }
+    else
+    {
+        cam_monitor->getPlayer()->set_fullscreen(true);
+        hide();
+    }
 }
 
 void MainWindow::activateSelf()
 {
+    camMonActive = false;
     showFullScreen();
     activateWindow();
+    if(!m_CamWidget)
+    {
+        cam_monitor->getPlayer()->set_fullscreen(false);
+    }
 }
 
 
@@ -371,7 +382,6 @@ void MainWindow::onStartMon()
         label->setText(str);
         FrameNo->setText("-");
         appLog::write(LOG_LEVEL_CAM_MON, str );
-        activateCamMonitor();
     }
 
 }
@@ -402,7 +412,7 @@ void MainWindow::startLoggers()
 
         foreach (cam_logger* cl, loggers)
         {
-            cl->startStreaming(m_vlog_root);
+            //cl->startStreaming(m_vlog_root);
         }
 
         connect (&stateTimer, &QTimer::timeout, this, &MainWindow::sendCamState);

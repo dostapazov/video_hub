@@ -137,15 +137,18 @@ bool cam_logger::startMonitoring( const QString& mrl)
     if (media)
     {
         media->close();
-        delete media;
+        media->deleteLater();
     }
 
     startPlayWatchDog();
     return true;
 }
 
-bool cam_logger::startStreaming(const QString folder)
+bool cam_logger::startStreaming(const QString& folder)
 {
+    if(this->m_params.disabled)
+        return false;
+
     m_StreamingMode = true;
     m_StorageFolder = folder;
     connect(this, &cam_logger::onError, this, &cam_logger::nextFile);
@@ -248,7 +251,10 @@ void cam_logger::nextFile()
     m_logger_player->play();
 
     if (media)
+    {
+        media->close();
         media->deleteLater();
+    }
 
     removeEmptyPreviousFile();
     startPlayWatchDog();
