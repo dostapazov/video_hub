@@ -345,12 +345,12 @@ void cam_logger::playChecker()
     libvlc_media_stats_t stats =  m_logger_player->get_media_stats();
     if (m_demuxReadBytes != stats.i_demux_read_bytes)
     {
-        if (!isStreaming())
+        if (!isStreaming() && stats.i_demux_read_bytes )
         {
             emit framesChanged(stats.i_displayed_pictures, stats.i_lost_pictures);
         }
         m_demuxReadBytes = stats.i_demux_read_bytes;
-        playWatchdog.start();
+        playWatchdog.start(PLAY_WATCHDOG_TIMEOUT);
         m_Playing = stats.i_demux_read_bytes;
         return;
     }
@@ -371,8 +371,8 @@ void cam_logger::startPlayWatchDog()
     if (playWatchdog.isActive())
         playWatchdog.stop();
     playWatchdog.setSingleShot(true);
-    playWatchdog.setInterval(PLAY_WATCHDOG_TIMEOUT);
-    playChecker();
+    playWatchdog.start(PLAY_WATCHDOG_START_TIMEOUT);
+    //playChecker();
 }
 
 bool cam_logger::togglePlaying()

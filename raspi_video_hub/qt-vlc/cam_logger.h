@@ -37,6 +37,7 @@ class cam_logger : public QObject
 
 public:
     static constexpr int PLAY_WATCHDOG_TIMEOUT = 5000;
+    static constexpr int PLAY_WATCHDOG_START_TIMEOUT = 1200;
 
     explicit cam_logger(const cam_params_t& aParams, QObject* parent = nullptr);
     ~cam_logger();

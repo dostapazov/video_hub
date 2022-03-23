@@ -10,6 +10,7 @@
 #include <qpalette.h>
 #include <signal.h>
 #include <unistd.h>
+#include <QOpenGLWidget>
 
 const char* const MainWindow::vlcArgs[] =
 {
@@ -56,13 +57,9 @@ MainWindow::MainWindow(QWidget* parent) :
     initCamMonitor();
     startCamMonitor();
     startLoggers();
-
-#if defined (DESKTOP_DEBUG_BUILD)
-    show();
-#else
-    showFullScreen();
-#endif
-
+    setWindowFlag(Qt::WindowStaysOnTopHint);
+    //setWindowFlag(Qt::X11BypassWindowManagerHint);
+    activateSelf();
 }
 
 MainWindow::~MainWindow()
@@ -303,6 +300,12 @@ void MainWindow::onCamSwitch(quint8 camId)
 }
 
 
+QWidget * MainWindow::createCamWidget()
+{
+//    return new QOpenGLWidget;
+//    return  new QWidget;
+    return nullptr;
+}
 
 void MainWindow::initCamMonitor()
 {
@@ -313,9 +316,7 @@ void MainWindow::initCamMonitor()
         connect(cam_monitor, &cam_logger::onPlayStop, this, &MainWindow::onMonitorError);
         connect(cam_monitor, &cam_logger::onError, this, &MainWindow::onMonitorError);
         connect(cam_monitor, &cam_logger::framesChanged, this, &MainWindow::onFramesChanged);
-#ifndef USE_NATIVE_PLAYER_WINDOW
-        m_CamWidget = new QWidget;
-#endif
+        m_CamWidget = createCamWidget();
     }
 }
 
@@ -324,6 +325,21 @@ void MainWindow::startCamMonitor()
     appLog::write(LOG_LEVEL_CAM_MON, "start_cam_monitor ");
     int cam_id = std::max(appConfig::get_mon_camera(), 0);
     emit cam_switch(static_cast<quint8>(cam_id));
+}
+
+void MainWindow::onStartMon()
+{
+    if (!isCamMonitorActive())
+    {
+        const cam_logger* clogger = loggers.at(appState.camId);
+        QString str = QString("%1 is monitored from %2")
+                      .arg(clogger->get_name())
+                      .arg(QDateTime::currentDateTime().toString("dd-MM-yy hh:mm:ss"))
+                      ;
+        label->setText(str);
+        FrameNo->setText("-");
+        appLog::write(LOG_LEVEL_CAM_MON, str );
+    }
 }
 
 void MainWindow::onFramesChanged(int displayFrames, int lostFrames)
@@ -339,12 +355,14 @@ void MainWindow::onFramesChanged(int displayFrames, int lostFrames)
 
 bool  MainWindow::isCamMonitorActive()
 {
-    return camMonActive;//  m_CamWidget->isVisible() && m_CamWidget->isActiveWindow();
+    return !isVisible();
 }
 
 void MainWindow::activateCamMonitor()
 {
-    camMonActive = true;
+    if(isCamMonitorActive())
+        return;
+
     if (m_CamWidget)
     {
         m_CamWidget->showFullScreen();
@@ -354,37 +372,25 @@ void MainWindow::activateCamMonitor()
     else
     {
         cam_monitor->getPlayer()->set_fullscreen(true);
-        hide();
     }
+    hide();
 }
 
 void MainWindow::activateSelf()
 {
-    camMonActive = false;
+//    if(!isCamMonitorActive())
+//        return;
+
+
+    //show();
     showFullScreen();
     activateWindow();
-    if(!m_CamWidget)
-    {
-        cam_monitor->getPlayer()->set_fullscreen(false);
-    }
+//    if(!m_CamWidget)
+//    {
+//        cam_monitor->getPlayer()->set_fullscreen(false);
+//    }
 }
 
-
-void MainWindow::onStartMon()
-{
-    if (!isCamMonitorActive())
-    {
-        const cam_logger* clogger = loggers.at(appState.camId);
-        QString str = QString("%1 is monitored from %2")
-                      .arg(clogger->get_name())
-                      .arg(QDateTime::currentDateTime().toString("dd-MM-yy hh:mm:ss"))
-                      ;
-        label->setText(str);
-        FrameNo->setText("-");
-        appLog::write(LOG_LEVEL_CAM_MON, str );
-    }
-
-}
 
 void MainWindow::onMonitorError()
 {
@@ -397,9 +403,9 @@ void MainWindow::onMonitorError()
                       ;
         appLog::write(LOG_LEVEL_CAM_MON, str);
         label->setText(str);
-        activateSelf();
     }
 
+    activateSelf();
     cam_monitor->startMonitoring( clogger->get_mrl());
 }
 
@@ -412,7 +418,7 @@ void MainWindow::startLoggers()
 
         foreach (cam_logger* cl, loggers)
         {
-            //cl->startStreaming(m_vlog_root);
+            cl->startStreaming(m_vlog_root);
         }
 
         connect (&stateTimer, &QTimer::timeout, this, &MainWindow::sendCamState);

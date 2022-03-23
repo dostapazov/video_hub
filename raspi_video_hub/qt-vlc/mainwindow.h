@@ -52,6 +52,7 @@ private slots:
     void errorPacket(QByteArray packet, bool crc);
 
 private:
+    QWidget * createCamWidget();
     void closeEvent(QCloseEvent* event) override;
 #ifdef DESKTOP_DEBUG_BUILD
     void keyReleaseEvent(QKeyEvent* event) override;
@@ -59,7 +60,6 @@ private:
     quint8 devId;
     QString m_vlog_root  ;
     QWidget* m_CamWidget = nullptr;
-    bool camMonActive = false;
 
     QList<cam_params_t> readCameraList();
     QVector<cam_logger*>   loggers;
