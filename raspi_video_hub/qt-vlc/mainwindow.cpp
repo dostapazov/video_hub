@@ -302,9 +302,20 @@ void MainWindow::onCamSwitch(quint8 camId)
 
 QWidget* MainWindow::createCamWidget()
 {
-    return new QOpenGLWidget;
-//    return  new QWidget;
-//    return nullptr;
+    QWidget* ret = nullptr;
+    switch (appConfig::get_cam_widget())
+    {
+        case WIDGET_MODE_NATIVE_VLC:
+            break;
+        case WIDGET_MODE_NORMAL:
+            ret = new QWidget;
+            break;
+        default:
+            ret = new QOpenGLWidget;
+            break;
+
+    }
+    return ret;
 }
 
 void MainWindow::initCamMonitor()

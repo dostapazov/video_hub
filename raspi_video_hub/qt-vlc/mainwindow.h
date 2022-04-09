@@ -25,7 +25,7 @@
 #define UPDATE_EXIT_CODE 77
 
 constexpr int VHUB_VERSION_MAJOR = 2;
-constexpr int VHUB_VERSION_MINOR = 1;
+constexpr int VHUB_VERSION_MINOR = 2;
 constexpr int SEND_STATE_PERIOD  = 5000;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow
