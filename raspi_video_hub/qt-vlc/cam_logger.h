@@ -36,8 +36,9 @@ class cam_logger : public QObject
     cam_logger& operator = (const cam_logger&) {return *this;}
 
 public:
-    static constexpr int PLAY_WATCHDOG_TIMEOUT = 5000;
-    static constexpr int PLAY_WATCHDOG_START_TIMEOUT = 1200;
+    static constexpr int PLAY_WATCHDOG_TIMEOUT = 500;
+    static constexpr int PLAY_WATCHDOG_NO_RESPOND_LIMIT = 10;
+
 
     explicit cam_logger(const cam_params_t& aParams, QObject* parent = nullptr);
     ~cam_logger();
@@ -69,14 +70,14 @@ private Q_SLOTS:
 
 private:
 
-    using player_event_handler_t = std::function<void(vlc::vlc_player*)>;
+    using player_event_handler_t = std::function<void(vlc::vlc_player*,const libvlc_event_t& event)>;
     using PlayerEventHandlers = QMap<libvlc_event_e, player_event_handler_t>;
     PlayerEventHandlers playerHandlers;
     vlc::vlc_player* createPlayer();
 
     void initPlayerHandlers();
-    void OnPlayerStopped(vlc::vlc_player* player);
-    void OnPlayerPlaying(vlc::vlc_player* player);
+    void OnPlayerStopped(vlc::vlc_player* player,const libvlc_event_t& event);
+    void OnPlayerPlaying(vlc::vlc_player* player, const libvlc_event_t &event);
     void startPlayWatchDog();
 
     int       get_time_interval(const QDateTime& dtm);
@@ -93,6 +94,7 @@ private:
     cam_params_t  m_params;
     QTimer        cutTimer;
     QTimer        playWatchdog;
+    int           playWatchdogCounter = 0;
 
     QString       m_StorageFolder;
     QStringList   m_streamFiles;
