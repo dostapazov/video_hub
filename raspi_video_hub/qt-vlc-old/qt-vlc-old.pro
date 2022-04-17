@@ -9,7 +9,7 @@ CONFIG   += thread c++11
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = vhub
+TARGET = vhub-old
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use
@@ -30,8 +30,14 @@ win32:{
 }
 
 unix:{
-LIBS += -lvlc  -lwiringPi
-LIBS += -L/usr/X11/lib -lX11
+LIBS += -lvlc
+#LIBS += -L/usr/X11/lib -lX11
+!contains(DEFINES,DESKTOP_DEBUG_BUILD) :{
+        CONFIG(release , debug | release) : {
+                LIBS += -lwiringPi
+        }
+ }
+
 }
 
 

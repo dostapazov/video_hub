@@ -4,6 +4,9 @@
 #include <QSettings>
 #include <QObject>
 
+constexpr int WIDGET_MODE_OPENGL = 2;
+constexpr int WIDGET_MODE_NORMAL = 1;
+constexpr int WIDGET_MODE_NATIVE_VLC = 0;
 class appConfig : public QObject
 {
     Q_OBJECT
@@ -36,6 +39,7 @@ public:
     static QString     get_log_name();
     static int         get_log_level();
     static void        set_log_enabled(bool enabled);
+    static int         get_cam_widget();
 
 
 
@@ -43,5 +47,11 @@ public:
 private:
     QSettings* cfg = Q_NULLPTR;
 };
+
+inline int   appConfig::get_cam_widget()
+{
+    QVariant v = value("COMMON/cam_widget");
+    return v.isValid() ? v.toInt() : WIDGET_MODE_OPENGL;
+}
 
 #endif // APPCONFIG_H

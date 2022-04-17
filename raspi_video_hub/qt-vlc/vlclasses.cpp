@@ -46,10 +46,13 @@ const vlc_instance* vlc_instance::get_instance()
     return vlc_inst;
 }
 
+
 libvlc_instance_t*   vlc_instance::create_instance(const int argc, const char* const argv[] )
 {
 
-    qRegisterMetaType<libvlc_event_t>("libvlc_event_t");
+    static int regData = 0;
+    if (!regData)
+        regData =  qRegisterMetaType<libvlc_event_t>("libvlc_event_t");
     libvlc_instance_t* vlc_inst = libvlc_new(argc, argv);
     return vlc_inst;
 }
