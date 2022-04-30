@@ -37,7 +37,6 @@ void MainWindow::initBlinker()
     blinker.start    ();
 }
 
-
 MainWindow::MainWindow(QWidget* parent) :
     QMainWindow(parent)
 
@@ -49,8 +48,6 @@ MainWindow::MainWindow(QWidget* parent) :
     appState.camId = -1;
     appState.fanState  = FAN_OFF;
     appState.temper = 0;
-
-
 
     initStartLoggers();
     init_gpio  ();
@@ -89,7 +86,6 @@ void MainWindow::init_libvlc()
     appLog::write(LOG_LEVEL_ALWAYS, QString("VLC-lib version ") + vlc_ver);
 }
 
-
 void MainWindow::start_file_deleter()
 {
     if (file_deleter && !file_deleter->isRunning())
@@ -127,12 +123,10 @@ QList<cam_params_t> MainWindow::readCameraList()
     std::sort(camList.begin(), camList.end());
     foreach (QString camName, camList)
     {
-
         cam_param.mrl  = appConfig::get_cam_mrl(camName);
         cam_param.id  = appConfig::get_cam_id(camName);
         cam_param.name = appConfig::get_cam_name(camName);
         cam_param.disabled = appConfig::get_cam_logdisabled(camName);
-
 
         if (!cam_param.mrl.isEmpty())
         {
@@ -147,7 +141,6 @@ QList<cam_params_t> MainWindow::readCameraList()
         cams.append({1, tr("IPCam101"), tr("rtsp://192.168.0.101:554/media/video1"), false});
     }
 #endif
-
 
     return cams;
 }
@@ -181,7 +174,6 @@ void MainWindow::deinitLoggers()
         cl->deleteLater();
     }
     loggers.clear();
-
 }
 
 void MainWindow::deinitMonitor()
@@ -306,8 +298,6 @@ void MainWindow::onCamSwitch(quint8 camId)
     }
 }
 
-
-
 void MainWindow::initCamMonitor()
 {
     if (!cam_monitor)
@@ -318,7 +308,6 @@ void MainWindow::initCamMonitor()
         connect(cam_monitor, &cam_logger::onError, this, &MainWindow::onMonitorError);
         connect(cam_monitor, &cam_logger::framesChanged, this, &MainWindow::onFramesChanged);
         m_CamWidget = new QWidget;
-
     }
 }
 
@@ -359,7 +348,6 @@ void MainWindow::activateSelf()
     activateWindow();
 }
 
-
 void MainWindow::onStartMon()
 {
     if (!isCamMonitorActive())
@@ -374,7 +362,6 @@ void MainWindow::onStartMon()
         appLog::write(LOG_LEVEL_CAM_MON, str );
         activateCamMonitor();
     }
-
 }
 
 void MainWindow::onMonitorError()
@@ -512,12 +499,9 @@ void MainWindow::keyReleaseEvent(QKeyEvent* event)
 }
 #endif
 
-
 QString MainWindow::version()
 {
     QString versionString =
         versionString.asprintf("%d.%02d", VHUB_VERSION_MAJOR, VHUB_VERSION_MINOR);
     return  versionString;
 }
-
-
