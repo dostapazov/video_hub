@@ -146,10 +146,11 @@ bool cam_logger::startMonitoring( const QString& mrl)
 
 bool cam_logger::startStreaming(const QString folder, int timeDuration)
 {
-    m_StreamingMode = true;
-    if (folder.isEmpty() || !timeDuration)
+
+    if (m_params.disabled || folder.isEmpty() || !timeDuration )
         return false;
 
+    m_StreamingMode = true;
     m_StorageFolder = folder;
     m_time_duration = timeDuration ;
     connect(this, &cam_logger::onError, this, &cam_logger::nextFile);

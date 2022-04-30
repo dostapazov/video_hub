@@ -51,6 +51,7 @@ public:
     vlc::vlc_player* getPlayer() {return  m_logger_player;}
 
     bool setMonitorWidget(QWidget* widget);
+    bool isLoggingDisabled() {return m_params.disabled;}
 
 signals :
     void onPlayStart();
