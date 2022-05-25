@@ -25,7 +25,7 @@
 #define UPDATE_EXIT_CODE 77
 
 constexpr int VHUB_VERSION_MAJOR = 2;
-constexpr int VHUB_VERSION_MINOR = 2;
+constexpr int VHUB_VERSION_MINOR = 1;
 constexpr int SEND_STATE_PERIOD  = 5000;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow
@@ -53,7 +53,6 @@ private slots:
     void errorPacket(QByteArray packet, bool crc);
 
 private:
-    QWidget* createCamWidget();
     void closeEvent(QCloseEvent* event) override;
 #ifdef DESKTOP_DEBUG_BUILD
     void keyReleaseEvent(QKeyEvent* event) override;
@@ -66,7 +65,6 @@ private:
     QVector<cam_logger*>   loggers;
     cam_logger* cam_monitor = nullptr;
     quint64 m_FramesDisplayed, m_FramesLost;
-    bool monActive = true;
     void onStartMon();
 
     QTimer blinker ;
@@ -89,7 +87,7 @@ private:
     void init_uart  ();
 
     void deinitUART ();
-    void stopLoggers();
+    void deinitLoggers();
     void deinit_all ();
 
     void start_file_deleter();
@@ -97,7 +95,6 @@ private:
     bool fanSwitch(bool on);
     QString whoami();
     bool check_media_drive();
-
 
     static const char* const vlcArgs[];
     static bool    do_rename_recorder  ();
@@ -115,10 +112,9 @@ private:
     void activateSelf();
 
     static QString version();
-    bool getCurrentTemper();
 };
 
-#if defined (DESKTOP_DEBUG_BUILD) || defined (NOT_RASPBERRY)
+#if defined DESKTOP_DEBUG_BUILD || defined (NOT_RASPBERRY)
     #define digitalRead(x)
     #define digitalWrite(x,y)
 #else

@@ -44,7 +44,7 @@ void MainWindow::initRecvParser(QIODevice* io)
     recvParser.setDevId(devId);
     recvParser.setIoDevice(io);
     connect(&recvParser, &RecvParser::camSwitch, this, &MainWindow::onCamSwitch);
-    //connect(&recvParser, &RecvParser::appState, this, &MainWindow::sendState);
+    //connect(&recvParser, &RecvParser::appState, this, &MainWindow::sendCamState);
     connect(&recvParser, &RecvParser::setDateTime, this, &MainWindow::setSystemDateTime);
     connect(&recvParser, &RecvParser::errorPacket, this, &MainWindow::errorPacket);
 }
@@ -76,24 +76,26 @@ void MainWindow::setSystemDateTime(QDateTime dt)
     //appLog::write(LOG_LEVEL_PARSER, QString("command %1").arg(dateTimeString));
 }
 
+
 void MainWindow::sendCamState()
 {
 
-    QByteArray data(sizeof(PCK_CAM_STATE_t),0);
-    PCK_CAM_STATE_t * cam_state = reinterpret_cast<PCK_CAM_STATE_t*>(data.data());
+    QByteArray data(sizeof(PCK_CAM_STATE_t), 0);
+    PCK_CAM_STATE_t* cam_state = reinterpret_cast<PCK_CAM_STATE_t*>(data.data());
     for (int i = 0; i < loggers.count(); i++)
     {
-        cam_logger * log = loggers.at(i);
-        if(log)
+        cam_logger* log = loggers.at(i);
+        if (log)
         {
-          cam_state->camState |= log->getErrorBit();
+            cam_state->camState |= log->getErrorBit();
         }
     }
 
-    qDebug() << "sendCamState "<< data.toHex();
+    qDebug() << "sendCamState " << data.toHex();
 
-    if(uart)
+    if (uart)
     {
         uart->write(makePck(PCT_STATE, devId, data));
     }
 }
+

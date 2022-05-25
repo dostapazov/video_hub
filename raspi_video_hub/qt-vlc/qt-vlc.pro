@@ -5,7 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui serialport network
-CONFIG   += thread c++17
+CONFIG   += thread c++14
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -17,8 +17,6 @@ TEMPLATE = app
 # depend on your compiler). Please consult the documentation of the
 # deprecated API in order to know how to port your code away from it.
 DEFINES += QT_DEPRECATED_WARNINGS
-
-#DEFINES += USE_NATIVE_PLAYER_WINDOW
 
 # You can also make your code fail to compile if you use deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -33,7 +31,7 @@ win32:{
 
 unix:{
 LIBS += -lvlc
-#LIBS += -L/usr/X11/lib -lX11
+LIBS += -L/usr/X11/lib -lX11
 
 !contains(DEFINES,DESKTOP_DEBUG_BUILD) :{
 	CONFIG(release , debug | release) : {
