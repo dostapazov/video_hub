@@ -1,3 +1,4 @@
+//
 #include <QDebug>
 #include <QDir>
 //#include <QAction>
@@ -10,14 +11,15 @@
 #include <qpalette.h>
 #include <signal.h>
 #include <unistd.h>
-#include <QOpenGLWidget>
 
 const char* const MainWindow::vlcArgs[] =
 {
     "--noaudio",
     "--no-overlay",
     "--network-caching=300",
-#if !defined DESKTOP_DEBUG_BUILD
+#ifdef DESKTOP_DEBUG_BUILD
+    "--verbose=-1",
+#else
     "--verbose=-1",
 #endif
 
@@ -42,11 +44,13 @@ MainWindow::MainWindow(QWidget* parent) :
     setupUi(this);
     LabelVersion->setText(version());
     devId = appConfig::get_devid();
+    connect(this, &MainWindow::cam_switch, this, &MainWindow::onCamSwitch, Qt::ConnectionType::QueuedConnection);
     appState.camId = -1;
     appState.fanState  = FAN_OFF;
     appState.temper = 0;
 
-    connect(this, &MainWindow::cam_switch, this, &MainWindow::onCamSwitch, Qt::ConnectionType::QueuedConnection);
+    connect (&stateTimer, &QTimer::timeout, this, &MainWindow::sendCamState);
+    stateTimer.setInterval(SEND_STATE_PERIOD);
 
     initStartLoggers();
     init_gpio  ();
@@ -57,16 +61,17 @@ MainWindow::MainWindow(QWidget* parent) :
     initCamMonitor();
     startCamMonitor();
     startLoggers();
-#if !defined (DESKTOP_DEBUG_BUILD)
-    setWindowFlags(Qt::WindowStaysOnTopHint | Qt::X11BypassWindowManagerHint);
+
+#if defined (DESKTOP_DEBUG_BUILD)
+    show();
+#else
+    showFullScreen();
 #endif
-    //setWindowFlag(Qt::X11BypassWindowManagerHint);
-    activateSelf();
+
 }
 
 MainWindow::~MainWindow()
 {
-
 }
 
 void MainWindow::initStartLoggers()
@@ -80,7 +85,6 @@ void MainWindow::init_libvlc()
 {
     int argc = sizeof(vlcArgs) / sizeof(vlcArgs[0]);
     vlc::vlc_instance::get_instance(argc, vlcArgs);
-
     QString vlc_ver = vlc::vlc_instance::get_version();
     appLog::write(LOG_LEVEL_ALWAYS, QString("VLC-lib version ") + vlc_ver);
 }
@@ -165,7 +169,7 @@ void MainWindow::load_config()
 #endif
 }
 
-void MainWindow::stopLoggers()
+void MainWindow::deinitLoggers()
 {
     foreach (cam_logger* cl, this->loggers)
     {
@@ -195,13 +199,17 @@ void MainWindow::deinitFileDeleter()
 
 void MainWindow::deinit_all()
 {
+    qDebug() << Q_FUNC_INFO << " begin";
 
     blinker.stop ();
     disconnect(&blinker );
-    stopLoggers();
+    deinitLoggers();
     deinitMonitor();
     deinitFileDeleter();
+
     deinitUART   ();
+    //appLog::write(2,QString(Q_FUNC_INFO));
+    qDebug() << Q_FUNC_INFO << " end";
 }
 
 static void addFolder(QString& path, const QString& folder)
@@ -279,37 +287,18 @@ void MainWindow::onCamSwitch(quint8 camId)
                   ;
             label->setText(str);
             m_FramesDisplayed = m_FramesLost = 0;
-            FrameNo->setText("?");
-            LostFrames->setText("?");
             activateSelf();
         }
         else
         {
             appLog::write(LOG_LEVEL_DEBUG,
-                          QString("selected camera Id[%1] is out of index [%2]")
+                          QString("selected camera Id[%1] is grow than camera count [%2]")
                           .arg(quint32(camId))
                           .arg(loggers.count())
                          );
         }
-    }
-}
-
-QWidget* MainWindow::createCamWidget()
-{
-    QWidget* ret = nullptr;
-    switch (appConfig::get_cam_widget())
-    {
-        case WIDGET_MODE_NATIVE_VLC:
-            break;
-        case WIDGET_MODE_NORMAL:
-            ret = new QWidget;
-            break;
-        default:
-            ret = new QOpenGLWidget;
-            break;
 
     }
-    return ret;
 }
 
 void MainWindow::initCamMonitor()
@@ -321,7 +310,7 @@ void MainWindow::initCamMonitor()
         connect(cam_monitor, &cam_logger::onPlayStop, this, &MainWindow::onMonitorError);
         connect(cam_monitor, &cam_logger::onError, this, &MainWindow::onMonitorError);
         connect(cam_monitor, &cam_logger::framesChanged, this, &MainWindow::onFramesChanged);
-        m_CamWidget = createCamWidget();
+        m_CamWidget = new QWidget;
     }
 }
 
@@ -329,8 +318,37 @@ void MainWindow::startCamMonitor()
 {
     appLog::write(LOG_LEVEL_CAM_MON, "start_cam_monitor ");
     int cam_id = std::max(appConfig::get_mon_camera(), 0);
-    onCamSwitch(static_cast<quint8>(cam_id));
-    //emit cam_switch(static_cast<quint8>(cam_id));
+    emit cam_switch(static_cast<quint8>(cam_id));
+}
+
+void MainWindow::onFramesChanged(int displayFrames, int lostFrames)
+{
+    m_FramesDisplayed += displayFrames;
+    m_FramesLost += lostFrames;
+    FrameNo->setText(QString::number(m_FramesDisplayed));
+    LostFrames->setText(QString::number(m_FramesLost));
+}
+
+
+bool  MainWindow::isCamMonitorActive()
+{
+    return  m_CamWidget->isVisible() && m_CamWidget->isActiveWindow();
+}
+
+void MainWindow::activateCamMonitor()
+{
+    if (m_CamWidget)
+    {
+        m_CamWidget->showFullScreen();
+        m_CamWidget->activateWindow();
+        m_CamWidget->setCursor(QCursor(Qt::BlankCursor));
+    }
+}
+
+void MainWindow::activateSelf()
+{
+    showFullScreen();
+    activateWindow();
 }
 
 void MainWindow::onStartMon()
@@ -349,67 +367,6 @@ void MainWindow::onStartMon()
     }
 }
 
-void MainWindow::onFramesChanged(int displayFrames, int lostFrames)
-{
-    m_FramesDisplayed += displayFrames;
-    m_FramesLost += lostFrames;
-    FrameNo->setText(QString::number(m_FramesDisplayed));
-    LostFrames->setText(QString::number(m_FramesLost));
-}
-
-
-bool  MainWindow::isCamMonitorActive()
-{
-    return monActive;
-}
-
-void MainWindow::activateCamMonitor()
-{
-    if (isCamMonitorActive())
-        return;
-
-    monActive = true;
-
-    if (m_CamWidget)
-    {
-        m_CamWidget->showFullScreen();
-        m_CamWidget->activateWindow();
-        m_CamWidget->setCursor(QCursor(Qt::BlankCursor));
-    }
-    else
-    {
-#ifndef DESKTOP_DEBUG_BUILD
-        cam_monitor->getPlayer()->set_fullscreen(true);
-#else
-        cam_monitor->getPlayer()->set_fullscreen(false);
-#endif
-    }
-
-#ifndef DESKTOP_DEBUG_BUILD
-    hide();
-#endif
-}
-
-void MainWindow::activateSelf()
-{
-
-    if (!isCamMonitorActive())
-        return;
-    monActive = false;
-
-#ifdef DESKTOP_DEBUG_BUILD
-    show();
-#else
-    showFullScreen();
-#endif
-    activateWindow();
-//    if(!m_CamWidget)
-//    {
-//        cam_monitor->getPlayer()->set_fullscreen(false);
-//    }
-}
-
-
 void MainWindow::onMonitorError()
 {
     const cam_logger* clogger = loggers.at(appState.camId);
@@ -421,9 +378,9 @@ void MainWindow::onMonitorError()
                       ;
         appLog::write(LOG_LEVEL_CAM_MON, str);
         label->setText(str);
+        activateSelf();
     }
 
-    activateSelf();
     cam_monitor->startMonitoring( clogger->get_mrl());
 }
 
@@ -433,21 +390,18 @@ void MainWindow::startLoggers()
     if (m_vlog_root.isEmpty() && check_media_drive())
     {
         start_file_deleter();
+        int timeDuration = appConfig::get_time_duration();
 
         foreach (cam_logger* cl, loggers)
         {
-            cl->startStreaming(m_vlog_root);
+            cl->startStreaming(m_vlog_root, timeDuration);
         }
-
-        connect (&stateTimer, &QTimer::timeout, this, &MainWindow::sendCamState);
-        stateTimer.setInterval(SEND_STATE_PERIOD);
         stateTimer.start();
 
     }
     else
         starLoggersTimer.start();
 }
-
 
 void MainWindow::init_gpio()
 {

@@ -63,9 +63,9 @@ void limitDuration(const QDateTime& dtm, long& duration)
 
 int    cam_logger::get_time_interval(const QDateTime& dtm)
 {
-    int time_duration = appConfig::get_time_duration();
+    m_time_duration = appConfig::get_time_duration();
     QTime time = dtm.time();
-    long duration_ms = time_duration * MIN_MSECS;
+    long duration_ms = m_time_duration * MIN_MSECS;
     long current_ms  = time.hour() * HOUR_MSECS + time.minute() * MIN_MSECS + time.second() * SEC_MSECS;
     ldiv_t ldt = ldiv(current_ms, duration_ms);
     duration_ms -= ldt.rem;
@@ -136,16 +136,15 @@ bool cam_logger::startMonitoring( const QString& mrl)
     m_logger_player->play();
     if (media)
     {
-        media->disconnect();
         media->close();
-        media->deleteLater();
+        delete media;
     }
 
     startPlayWatchDog();
     return true;
 }
 
-bool cam_logger::startStreaming(const QString& folder)
+bool cam_logger::startStreaming(const QString folder, int timeDuration)
 {
 
     if (m_params.disabled || folder.isEmpty() || !timeDuration )
@@ -153,6 +152,7 @@ bool cam_logger::startStreaming(const QString& folder)
 
     m_StreamingMode = true;
     m_StorageFolder = folder;
+    m_time_duration = timeDuration ;
     connect(this, &cam_logger::onError, this, &cam_logger::nextFile);
     nextFile();
     return true;
@@ -171,6 +171,7 @@ int cam_logger::setupMediaForStreaming(vlc::vlc_media* media)
     m_streamFiles.append(fileName);
     int time_len      = get_time_interval(dtm);
     media->add_option(":no-overlay");
+    media->add_option(":rtsp-timeout=5000");
     media->add_option(":sout-mp4-faststart");
 
     str = QString(":network-caching=%1").arg(m_network_caching);
@@ -200,28 +201,29 @@ vlc::vlc_media*  cam_logger::create_media()
     QString str;
     m_file_timelen = 0;
     vlc::vlc_media* media   = new vlc::vlc_media;
-    m_Playing = false;
+    this->m_Playing = false;
     if (media)
     {
-        if (!media->open_location(get_mrl().toLocal8Bit().constData()))
+
+        if (media->open_location(get_mrl().toLocal8Bit().constData()))
+        {
+            media->add_option(":no-audio");
+            if (isStreaming())
+            {
+                str = QString("%1 create next media ").arg(get_name());
+                m_file_timelen = setupMediaForStreaming(media);
+                div_t t     = div(m_file_timelen, 1000);
+                str += QString(" interval %1. %2").arg(t.quot).arg(t.rem);
+                appLog::write(LOG_LEVEL_VLC, str);
+            }
+            else
+                media->add_option(":rtsp-timeout=20000");
+        }
+        else
         {
             str = QString("%1 error open  ").arg(get_name()).arg(get_mrl());
             appLog::write(LOG_LEVEL_VLC, str);
-            media->deleteLater();
-            return nullptr;
         }
-
-        media->add_option(":no-audio");
-        media->add_option(":rtsp-timeout=5000");
-        if (isStreaming())
-        {
-            str = QString("%1 create next media ").arg(get_name());
-            m_file_timelen = setupMediaForStreaming(media);
-            div_t t     = div(m_file_timelen, 1000);
-            str += QString(" interval %1. %2").arg(t.quot).arg(t.rem);
-            appLog::write(LOG_LEVEL_VLC, str);
-        }
-
     }
     return media;
 }
@@ -246,16 +248,14 @@ void cam_logger::nextFile()
         cutTimer.stop ();
 
     createPlayer();
+
     vlc::vlc_media* media = create_media();
     media = m_logger_player->set_media(media);
-    m_Playing = false;
     m_logger_player->play();
 
+
     if (media)
-    {
-        media->close();
         media->deleteLater();
-    }
 
     removeEmptyPreviousFile();
     startPlayWatchDog();
@@ -265,24 +265,22 @@ void cam_logger::nextFile()
 void cam_logger::initPlayerHandlers()
 {
     namespace p = std::placeholders;
-    playerHandlers[libvlc_MediaPlayerPlaying] = std::bind(&cam_logger::OnPlayerPlaying, this, p::_1, p::_2);
-    playerHandlers[libvlc_MediaPlayerStopped] = std::bind(&cam_logger::OnPlayerStopped, this, p::_1, p::_2);
+    playerHandlers[libvlc_MediaPlayerPlaying] = std::bind(&cam_logger::OnPlayerPlaying, this, p::_1);
+    playerHandlers[libvlc_MediaPlayerStopped] = std::bind(&cam_logger::OnPlayerStopped, this, p::_1);
 }
 
-void cam_logger::OnPlayerStopped(vlc::vlc_player* player, const libvlc_event_t& event)
+void cam_logger::OnPlayerStopped(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
-    Q_UNUSED(event);
     QString str = QString("%1 stopped").arg(get_name());
     appLog::write(LOG_LEVEL_VLC, str);
     m_Playing = false;
     emit onPlayStop();
 }
 
-void cam_logger::OnPlayerPlaying(vlc::vlc_player* player, const libvlc_event_t& event)
+void cam_logger::OnPlayerPlaying(vlc::vlc_player* player)
 {
     Q_UNUSED(player)
-    Q_UNUSED(event);
     QString str = QString("%1 playing").arg(get_name());
     appLog::write(LOG_LEVEL_VLC, str);
 
@@ -294,16 +292,15 @@ void cam_logger::OnPlayerPlaying(vlc::vlc_player* player, const libvlc_event_t& 
         cutTimer.start();
     }
     startPlayWatchDog();
-}
+    emit onPlayStart();
 
+}
 
 void   cam_logger::player_events(const libvlc_event_t event)
 {
     player_event_handler_t handler = playerHandlers.value(static_cast<libvlc_event_e>(event.type));
     if (handler)
-    {
-        handler(m_logger_player, event);
-    }
+        handler(m_logger_player);
 }
 
 vlc::vlc_player*   cam_logger::createPlayer()
@@ -343,6 +340,29 @@ void      cam_logger::releasePlayer()
     }
 }
 
+//void cam_logger::playChecker()
+//{
+
+//    libvlc_media_stats_t stats =  m_logger_player->get_media_stats();
+//    if (m_demuxReadBytes != stats.i_demux_read_bytes)
+//    {
+//        if (!isStreaming())
+//        {
+//            emit framesChanged(stats.i_displayed_pictures, stats.i_lost_pictures);
+//        }
+//        m_demuxReadBytes = stats.i_demux_read_bytes;
+//        playWatchdog.start();
+//        m_Playing = true;
+//        return;
+//    }
+
+//    if (m_Playing)
+//    {
+//        appLog::write(LOG_LEVEL_VLC, QString("%1 not respond").arg(get_name()));
+//    }
+
+//    emit onError();
+//}
 
 void cam_logger::playChecker()
 {
@@ -381,15 +401,17 @@ void cam_logger::playChecker()
     }
 }
 
+
+constexpr int PLAY_WATCHDOG_TIMEOUT = 5000;
+
 void cam_logger::startPlayWatchDog()
 {
-    m_demuxReadBytes = 0;
-    playWatchdogCounter = 0;
+    m_demuxReadBytes = -1;
     if (playWatchdog.isActive())
         playWatchdog.stop();
-
     playWatchdog.setSingleShot(true);
-    playWatchdog.start(PLAY_WATCHDOG_TIMEOUT);
+    playWatchdog.setInterval(PLAY_WATCHDOG_TIMEOUT);
+    playChecker();
 }
 
 bool cam_logger::togglePlaying()
@@ -408,3 +430,4 @@ uint8_t cam_logger::getErrorBit()
 
     return 1 << (m_params.id - 1);
 }
+
