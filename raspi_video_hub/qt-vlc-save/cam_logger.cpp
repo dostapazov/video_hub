@@ -201,6 +201,7 @@ vlc::vlc_media*  cam_logger::create_media()
     QString str;
     m_file_timelen = 0;
     vlc::vlc_media* media   = new vlc::vlc_media;
+    this->m_Playing = false;
     if (media)
     {
 
@@ -339,29 +340,67 @@ void      cam_logger::releasePlayer()
     }
 }
 
+//void cam_logger::playChecker()
+//{
+
+//    libvlc_media_stats_t stats =  m_logger_player->get_media_stats();
+//    if (m_demuxReadBytes != stats.i_demux_read_bytes)
+//    {
+//        if (!isStreaming())
+//        {
+//            emit framesChanged(stats.i_displayed_pictures, stats.i_lost_pictures);
+//        }
+//        m_demuxReadBytes = stats.i_demux_read_bytes;
+//        playWatchdog.start();
+//        m_Playing = true;
+//        return;
+//    }
+
+//    if (m_Playing)
+//    {
+//        appLog::write(LOG_LEVEL_VLC, QString("%1 not respond").arg(get_name()));
+//    }
+
+//    emit onError();
+//}
+
 void cam_logger::playChecker()
 {
+    libvlc_media_stats_t stats ;
+    memset(&stats, 0, sizeof(stats));
 
-    libvlc_media_stats_t stats =  m_logger_player->get_media_stats();
-    if (m_demuxReadBytes != stats.i_demux_read_bytes)
+    if (!m_logger_player->get_media_stats(stats) || m_demuxReadBytes == stats.i_demux_read_bytes)
     {
-        if (!isStreaming())
+        if (++playWatchdogCounter < PLAY_WATCHDOG_NO_RESPOND_LIMIT)
         {
-            emit framesChanged(stats.i_displayed_pictures, stats.i_lost_pictures);
+            playWatchdog.start(PLAY_WATCHDOG_TIMEOUT);
         }
-        m_demuxReadBytes = stats.i_demux_read_bytes;
-        playWatchdog.start();
-        m_Playing = true;
+        else
+        {
+            playWatchdogCounter = 0;
+            if (m_Playing)
+                appLog::write(LOG_LEVEL_VLC, QString("%1 not respond").arg(get_name()));
+            emit onError();
+        }
         return;
     }
 
-    if (m_Playing)
+    m_demuxReadBytes = stats.i_demux_read_bytes;
+
+    playWatchdogCounter = 0;
+    playWatchdog.start(PLAY_WATCHDOG_TIMEOUT * PLAY_WATCHDOG_NO_RESPOND_LIMIT);
+    if (!m_Playing && stats.i_demux_read_bytes)
     {
-        appLog::write(LOG_LEVEL_VLC, QString("%1 not respond").arg(get_name()));
+        m_Playing = true;
+        emit onPlayStart();
     }
 
-    emit onError();
+    if (!isStreaming() && m_Playing)
+    {
+        emit framesChanged(stats.i_displayed_pictures, stats.i_lost_pictures);
+    }
 }
+
 
 constexpr int PLAY_WATCHDOG_TIMEOUT = 5000;
 

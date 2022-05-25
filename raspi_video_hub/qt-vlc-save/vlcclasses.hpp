@@ -36,7 +36,10 @@ public :
 	static      const char*     get_version();
 
 
-	const libvlc_instance_t* operator()()const { return m_instance;}
+    const libvlc_instance_t* operator()()const
+    {
+        return m_instance;
+    }
 
 private:
 	libvlc_instance_t*     m_instance;
@@ -101,7 +104,7 @@ public:
 	void     set_fullscreen(bool full);
 	QStringList    get_last_errors();
 	libvlc_state_t get_state ();
-	libvlc_media_stats_t get_media_stats();
+    bool get_media_stats(libvlc_media_stats_t &stats);
 
 #ifdef __linux__
 	void     set_drawable(uint32_t x11drawable);
@@ -212,14 +215,14 @@ inline libvlc_state_t vlc_player::get_state ()
 	return m_player ? libvlc_media_player_get_state(m_player) : libvlc_Error;
 }
 
-inline libvlc_media_stats_t vlc_player::get_media_stats()
+inline bool vlc_player::get_media_stats(libvlc_media_stats_t & stats)
 {
-	libvlc_media_stats_t stats;
-	if (hasMedia())
-		m_current_media->get_stats(&stats);
-	else
-		memset(&stats, 0, sizeof(stats));
-	return stats;
+
+    if (!hasMedia())
+        return false;
+
+    return m_current_media->get_stats(&stats);
+
 }
 
 #ifdef __linux__

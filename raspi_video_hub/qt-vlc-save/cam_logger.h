@@ -37,6 +37,10 @@ class cam_logger : public QObject
 
 public:
 
+    static constexpr int PLAY_WATCHDOG_TIMEOUT = 500;
+    static constexpr int PLAY_WATCHDOG_NO_RESPOND_LIMIT = 10;
+
+
     explicit       cam_logger(const cam_params_t& aParams, QObject* parent = nullptr);
     ~cam_logger();
     int      get_id    () const   {return   m_params.id;}
@@ -92,6 +96,7 @@ private:
     cam_params_t  m_params;
     QTimer        cutTimer;
     QTimer        playWatchdog;
+    int           playWatchdogCounter = 0;
 
     QString       m_StorageFolder;
     QStringList   m_streamFiles;
