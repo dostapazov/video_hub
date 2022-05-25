@@ -49,6 +49,9 @@ MainWindow::MainWindow(QWidget* parent) :
     appState.fanState  = FAN_OFF;
     appState.temper = 0;
 
+    connect (&stateTimer, &QTimer::timeout, this, &MainWindow::sendCamState);
+    stateTimer.setInterval(SEND_STATE_PERIOD);
+
     initStartLoggers();
     init_gpio  ();
     initBlinker();
@@ -393,6 +396,8 @@ void MainWindow::startLoggers()
         {
             cl->startStreaming(m_vlog_root, timeDuration);
         }
+        stateTimer.start();
+
     }
     else
         starLoggersTimer.start();

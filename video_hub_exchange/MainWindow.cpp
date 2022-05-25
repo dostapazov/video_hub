@@ -316,6 +316,7 @@ void MainWindow::sendOnChange(bool checked)
 //    if ((timer.interval() - time) < 10)
 //        QTimer::singleShot(10, this, SLOT(send()));
 //    else
+    Q_UNUSED(checked)
     send();
 }
 

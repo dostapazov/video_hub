@@ -52,6 +52,7 @@ public:
 
     bool setMonitorWidget(QWidget* widget);
     bool isLoggingDisabled() {return m_params.disabled;}
+    uint8_t getErrorBit();
 
 signals :
     void onPlayStart();

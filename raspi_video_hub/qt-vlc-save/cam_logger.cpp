@@ -383,3 +383,12 @@ bool cam_logger::togglePlaying()
     }
     return false;
 }
+
+uint8_t cam_logger::getErrorBit()
+{
+    if (m_Playing || 0 == m_params.id)
+        return 0;
+
+    return 1 << (m_params.id - 1);
+}
+

@@ -50,6 +50,13 @@ typedef struct
     quint8     year;
 } PCK_DateTime_t;
 
+typedef struct
+{
+    uint8_t camState;
+    uint8_t reserv;
+}
+PCK_CAM_STATE_t;
+
 #pragma pack(pop)
 
 

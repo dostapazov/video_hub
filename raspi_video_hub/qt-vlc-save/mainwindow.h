@@ -26,6 +26,7 @@
 
 constexpr int VHUB_VERSION_MAJOR = 2;
 constexpr int VHUB_VERSION_MINOR = 1;
+constexpr int SEND_STATE_PERIOD  = 5000;
 
 class MainWindow : public QMainWindow, private Ui::MainWindow
 {
@@ -48,7 +49,7 @@ private slots:
     void setSystemDateTime(QDateTime dt);
     void startLoggers();
 
-    void reqAppState();
+    void sendCamState();
     void errorPacket(QByteArray packet, bool crc);
 
 private:
@@ -68,6 +69,7 @@ private:
 
     QTimer blinker ;
     QTimer starLoggersTimer ;
+    QTimer stateTimer;
 
     RecvParser  recvParser;
     PCK_STATE_t appState ;
